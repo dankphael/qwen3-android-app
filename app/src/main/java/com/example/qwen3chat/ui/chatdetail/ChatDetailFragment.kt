@@ -33,7 +33,7 @@ import java.util.Locale
  * - Empty state with suggestion chips
  * - Typing indicator
  */
-class ChatDetailFragment : Fragment() {
+class ChatDetailFragment : Fragment(), ChatAdapter.MessageActionListener {
 
     private var _binding: FragmentChatDetailBinding? = null
     private val binding get() = _binding!!
@@ -120,7 +120,7 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        chatAdapter = ChatAdapter()
+        chatAdapter = ChatAdapter(this)
         binding.recyclerViewChat.layoutManager = LinearLayoutManager(requireContext())
         binding.recyclerViewChat.adapter = chatAdapter
     }
@@ -206,6 +206,24 @@ class ChatDetailFragment : Fragment() {
                 transitionToReady()
             }
         }
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // MessageActionListener implementation (long-press menu callbacks)
+    // ──────────────────────────────────────────────────────────────────
+
+    override fun onRegenerate() {
+        viewModel.regenerate(onError = { errorMsg ->
+            Toast.makeText(requireContext(), errorMsg, Toast.LENGTH_SHORT).show()
+        })
+        transitionToSending()
+    }
+
+    override fun onEditAndResend(messageId: Long, newText: String) {
+        viewModel.editAndResend(messageId, newText, onError = { errorMsg ->
+            Toast.makeText(requireContext(), errorMsg, Toast.LENGTH_SHORT).show()
+        })
+        transitionToSending()
     }
 
     /** IDLE state: mic icon, transparent background */

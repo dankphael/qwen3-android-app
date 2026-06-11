@@ -17,7 +17,16 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class ChatAdapter : ListAdapter<ChatMessage, ChatAdapter.MessageViewHolder>(DiffCallback()) {
+class ChatAdapter(private var messageActionListener: MessageActionListener? = null) : ListAdapter<ChatMessage, ChatAdapter.MessageViewHolder>(DiffCallback()) {
+
+    interface MessageActionListener {
+        fun onRegenerate()
+        fun onEditAndResend(messageId: Long, currentText: String)
+    }
+
+    fun setMessageActionListener(listener: MessageActionListener) {
+        this.messageActionListener = listener
+    }
 
     /** Track which positions have already had their appear animation fired */
     private val animatedPositions = mutableSetOf<Int>()
@@ -360,12 +369,23 @@ class ChatAdapter : ListAdapter<ChatMessage, ChatAdapter.MessageViewHolder>(Diff
                 .start()
         }
 
-        /** Long-press popup with Copy and Share actions */
+        /** Long-press popup with Copy, Share, Regenerate, Edit & Resend actions */
         private fun showMessageActions(view: View, message: ChatMessage) {
             val context = view.context
             val popup = android.widget.PopupMenu(context, view)
             popup.menu.add(0, ACTION_COPY, 0, "Copy")
             popup.menu.add(0, ACTION_SHARE, 0, "Share")
+
+            // Assistant messages: offer Regenerate
+            if (!message.isUser) {
+                popup.menu.add(0, ACTION_REGENERATE, 0, "Regenerate")
+            }
+
+            // User messages: offer Edit & Resend
+            if (message.isUser) {
+                popup.menu.add(0, ACTION_EDIT_RESEND, 0, "Edit & Resend")
+            }
+
             popup.setOnMenuItemClickListener { item ->
                 when (item.itemId) {
                     ACTION_COPY -> {
@@ -382,15 +402,49 @@ class ChatAdapter : ListAdapter<ChatMessage, ChatAdapter.MessageViewHolder>(Diff
                         context.startActivity(android.content.Intent.createChooser(intent, "Share message"))
                         true
                     }
+                    ACTION_REGENERATE -> {
+                        messageActionListener?.onRegenerate()
+                        true
+                    }
+                    ACTION_EDIT_RESEND -> {
+                        showEditDialog(context, message.id, message.content)
+                        true
+                    }
                     else -> false
                 }
             }
             popup.show()
         }
 
+        /** Dialog to edit message text before resending */
+        private fun showEditDialog(context: android.content.Context, messageId: Long, currentText: String) {
+            val input = android.widget.EditText(context).apply {
+                setText(currentText)
+                setSelection(currentText.length)
+                setLines(3)
+                maxLines = 5
+            }
+
+            com.google.android.material.dialog.MaterialAlertDialogBuilder(context)
+                .setTitle("Edit Message")
+                .setView(input)
+                .setNegativeButton("Cancel") { _, _ -> }
+                .setPositiveButton("Resend") { _, _ ->
+                    val newText = input.text.toString().trim()
+                    if (newText.isNotEmpty()) {
+                        messageActionListener?.onEditAndResend(messageId, newText)
+                    } else {
+                        android.widget.Toast.makeText(context, "Message cannot be empty", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }
+                .show()
+        }
+
         companion object {
             private const val ACTION_COPY = 1
             private const val ACTION_SHARE = 2
+            private const val ACTION_REGENERATE = 3
+            private const val ACTION_EDIT_RESEND = 4
         }
     }
 

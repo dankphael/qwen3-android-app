@@ -254,6 +254,9 @@ class ChatDetailViewModel(application: Application) : AndroidViewModel(applicati
                     }
                 }
 
+                // Reset KV cache since we deleted assistant messages
+                qwenModel?.resetConversation()
+
                 // Re-send the last user message to regenerate response
                 sendMessage(userText, onResponseStart = {}, onError = onError)
             } catch (e: Exception) {
@@ -286,6 +289,9 @@ class ChatDetailViewModel(application: Application) : AndroidViewModel(applicati
 
                 // Delete the original message and send the new one
                 repository.deleteMessage(messageId)
+
+                // Reset KV cache since we deleted messages
+                qwenModel?.resetConversation()
 
                 // Send the new text
                 sendMessage(newText, onResponseStart = {}, onError = onError)
