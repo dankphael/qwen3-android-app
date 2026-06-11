@@ -155,6 +155,52 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/sliderMaxTokens" />
 
+    <!-- GPU Enable label -->
+    <TextView
+        android:id="@+id/labelGpuEnabled"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="GPU Acceleration"
+        android:textAppearance="@style/TextAppearance.Qwen.TitleMedium"
+        android:textColor="@color/on_surface"
+        android:layout_marginTop="@dimen/space_24"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/divider2" />
+
+    <!-- GPU Enable switch -->
+    <com.google.android.material.switchmaterial.SwitchMaterial
+        android:id="@+id/switchGpuEnabled"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/labelGpuEnabled"
+        app:layout_constraintBottom_toBottomOf="@id/labelGpuEnabled" />
+
+    <!-- GPU description -->
+    <TextView
+        android:id="@+id/textGpuDesc"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Requires rooted device with OpenCL support. Auto-disables if unavailable."
+        android:textAppearance="@style/TextAppearance.Qwen.BodySmall"
+        android:textColor="@color/on_surface_variant"
+        android:layout_marginTop="@dimen/space_8"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/labelGpuEnabled" />
+
+    <!-- Divider -->
+    <View
+        android:id="@+id/divider3"
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:layout_marginTop="@dimen/space_24"
+        android:background="@color/outline_variant"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/textGpuDesc" />
+
     <!-- Diagnostics button -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/buttonDiagnostics"
@@ -167,7 +213,7 @@
         app:cornerRadius="@dimen/download_button_radius"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/divider2"
+        app:layout_constraintTop_toBottomOf="@id/divider3"
         tools:ignore="UnusedAttribute" />
 
     <!-- Change Model button -->

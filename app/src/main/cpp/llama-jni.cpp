@@ -457,6 +457,7 @@ Java_com_example_qwen3chat_LlamaEngine_nativeGetBatchSize(JNIEnv *, jobject) {
 
 static bool probe_opencl(char *name_buf, size_t name_len, long *mem_mb) {
     // Try loading libOpenCL.so from various paths
+    // On non-rooted devices, this often fails due to linker namespace restrictions
     const char *paths[] = {
         "libOpenCL.so",
         "/vendor/lib64/libOpenCL.so",
@@ -465,15 +466,18 @@ static bool probe_opencl(char *name_buf, size_t name_len, long *mem_mb) {
         NULL
     };
     void *handle = NULL;
+    const char *last_error = NULL;
     for (int i = 0; paths[i]; i++) {
         handle = dlopen(paths[i], RTLD_NOW | RTLD_LOCAL);
         if (handle) {
-            LOGI("OpenCL: loaded from %s", paths[i]);
+            LOGI("OpenCL: successfully loaded from %s", paths[i]);
             break;
         }
+        last_error = dlerror();
     }
     if (!handle) {
-        LOGI("OpenCL: dlopen failed for all paths: %s", dlerror());
+        // Non-rooted devices typically fail with linker namespace or permission error
+        LOGI("OpenCL: libOpenCL.so not accessible (likely non-rooted device or missing GPU driver). Last error: %s", last_error);
         return false;
     }
 
@@ -555,13 +559,13 @@ Java_com_example_qwen3chat_LlamaEngine_nativeDetectGpuBackend(JNIEnv *env, jobje
 
     // Try OpenCL first (most widely supported)
     if (probe_opencl(name_buf, sizeof(name_buf), &mem_mb)) {
-        LOGI("GPU backend: OpenCL (%s, %ld MB)", name_buf, mem_mb);
+        LOGI("GPU backend: OpenCL (%s, %ld MB) — GPU acceleration enabled", name_buf, mem_mb);
         return env->NewStringUTF("opencl");
     }
 
     // TODO: Try Vulkan probe here in the future
 
-    LOGI("GPU backend: CPU (no GPU found)");
+    LOGI("GPU backend: CPU (fallback) — no GPU detected or inaccessible (typically requires rooted device for OpenCL)");
     return env->NewStringUTF("cpu");
 }
 

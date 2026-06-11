@@ -11,6 +11,7 @@ class ModelPreferences(context: Context) {
         private const val KEY_FIRST_LAUNCH_DONE = "first_launch_done"
         private const val KEY_TEMPERATURE = "temperature"
         private const val KEY_MAX_TOKENS = "max_tokens"
+        private const val KEY_GPU_ENABLED = "gpu_enabled"
     }
 
     fun getSelectedModelKey(): String? = prefs.getString(KEY_SELECTED_MODEL, null)
@@ -32,6 +33,10 @@ class ModelPreferences(context: Context) {
     fun getMaxTokens(): Int = prefs.getInt(KEY_MAX_TOKENS, 512)
 
     fun saveMaxTokens(value: Int) = prefs.edit().putInt(KEY_MAX_TOKENS, value).apply()
+
+    fun isGpuEnabled(): Boolean = prefs.getBoolean(KEY_GPU_ENABLED, true)
+
+    fun saveGpuEnabled(value: Boolean) = prefs.edit().putBoolean(KEY_GPU_ENABLED, value).apply()
 
     fun migrateFromV1(context: Context): Boolean {
         if (getSelectedModelKey() != null) return false

@@ -9,10 +9,11 @@ set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_SERVER OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_COMMON ON CACHE BOOL "" FORCE)
 set(GGML_OPENMP ON CACHE BOOL "" FORCE)
-# GPU: disabled — OpenCL/Vulkan backends have linker namespace issues on Android
-# CPU-only with OpenMP + NEON is stable. GPU offload to be revisited.
+# GPU: OpenCL enabled for devices with working GPU support
+# On non-rooted devices, OpenCL probe may fail due to linker namespace restrictions
+# Graceful fallback to CPU when GPU is unavailable (best-effort GPU, required CPU)
 set(GGML_VULKAN OFF CACHE BOOL "" FORCE)
-set(GGML_OPENCL OFF CACHE BOOL "" FORCE)
+set(GGML_OPENCL ON CACHE BOOL "" FORCE)
 set(GGML_OPENCL_EMBED_KERNELS OFF CACHE BOOL "" FORCE)
 # Android cross-compile: disable native CPU detection, use armv8-a+simd
 set(GGML_NATIVE OFF CACHE BOOL "" FORCE)

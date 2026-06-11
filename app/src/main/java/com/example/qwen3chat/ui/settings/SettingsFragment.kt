@@ -36,6 +36,7 @@ class SettingsFragment : Fragment() {
 
         setupTemperatureSlider()
         setupMaxTokensSlider()
+        setupGpuToggle()
         setupChangeModelButton()
         setupDiagnosticsButton()
         setupDeviceInfo()
@@ -77,6 +78,15 @@ class SettingsFragment : Fragment() {
                 modelPreferences.saveMaxTokens(slider.value.toInt())
             }
         })
+    }
+
+    private fun setupGpuToggle() {
+        val isGpuEnabled = modelPreferences.isGpuEnabled()
+        binding.switchGpuEnabled.isChecked = isGpuEnabled
+
+        binding.switchGpuEnabled.setOnCheckedChangeListener { _, isChecked ->
+            modelPreferences.saveGpuEnabled(isChecked)
+        }
     }
 
     private fun setupChangeModelButton() {
