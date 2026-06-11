@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.lifecycle.lifecycleScope
 import com.example.qwen3chat.R
+import com.example.qwen3chat.ModelPreferences
 import com.example.qwen3chat.data.entity.ChatEntity
 import com.example.qwen3chat.databinding.FragmentChatListBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -102,7 +103,8 @@ class ChatListFragment : Fragment() {
 
     private fun setupFab() {
         binding.fabNewChat.setOnClickListener {
-            val modelUsed = "qwen3.5-4b"
+            val modelPreferences = ModelPreferences(requireContext())
+            val modelUsed = modelPreferences.getSelectedModelKey()
             viewModel.createNewChat(modelUsed) { chatId ->
                 navigateToChatId(chatId)
             }

@@ -58,6 +58,10 @@ class ChatDetailViewModel(application: Application) : AndroidViewModel(applicati
     private val _chatTitle = MutableStateFlow("Chat")
     val chatTitle: StateFlow<String> = _chatTitle.asStateFlow()
 
+    /** Model name used for this chat */
+    private val _chatModelUsed = MutableStateFlow("Qwen3.5-0.8B")
+    val chatModelUsed: StateFlow<String> = _chatModelUsed.asStateFlow()
+
     private var qwenModel: QwenModel? = null
 
     /** Speed tracking fields */
@@ -84,7 +88,16 @@ class ChatDetailViewModel(application: Application) : AndroidViewModel(applicati
     private fun observeChat(chatId: Long) {
         viewModelScope.launch {
             repository.getChatById(chatId).collect { chat ->
-                chat?.let { _chatTitle.value = it.title }
+                chat?.let {
+                    _chatTitle.value = it.title
+                    // Extract model display name from model key
+                    val modelDisplay = try {
+                        ModelMetadata.findByKey(it.modelUsed).displayName
+                    } catch (e: Exception) {
+                        it.modelUsed.ifEmpty { "Qwen3.5-0.8B" }
+                    }
+                    _chatModelUsed.value = modelDisplay
+                }
             }
         }
     }

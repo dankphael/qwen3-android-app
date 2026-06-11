@@ -428,6 +428,13 @@ class ChatDetailFragment : Fragment(), ChatAdapter.MessageActionListener {
             }
         }
 
+        // Observe model used for this chat (show as subtitle)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.chatModelUsed.collect { modelName ->
+                binding.toolbar.subtitle = modelName
+            }
+        }
+
         // Observe token speed + context usage combined
         viewLifecycleOwner.lifecycleScope.launch {
             combine(viewModel.tokensPerSecond, viewModel.contextUsage) { speed, context ->
