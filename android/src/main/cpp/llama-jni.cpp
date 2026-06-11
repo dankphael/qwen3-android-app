@@ -65,14 +65,14 @@ static int count_big_cores() {
 extern "C" {
 
 JNIEXPORT void JNICALL
-Java_com_example_qwen3chat_LlamaEngine_nativeInit(JNIEnv *, jobject) {
+Java_com_example_qwen3_core_LlamaEngine_nativeInit(JNIEnv *, jobject) {
     llama_backend_init();
     g_n_tokens_cached = 0;
     LOGI("llama backend initialized");
 }
 
 JNIEXPORT jlong JNICALL
-Java_com_example_qwen3chat_LlamaEngine_nativeLoadModel(JNIEnv *env, jobject, jstring jpath) {
+Java_com_example_qwen3_core_LlamaEngine_nativeLoadModel(JNIEnv *env, jobject, jstring jpath) {
     const char *path = env->GetStringUTFChars(jpath, nullptr);
 
     auto params = llama_model_default_params();
@@ -93,7 +93,7 @@ Java_com_example_qwen3chat_LlamaEngine_nativeLoadModel(JNIEnv *env, jobject, jst
 }
 
 JNIEXPORT jlong JNICALL
-Java_com_example_qwen3chat_LlamaEngine_nativeLoadModelGpu(JNIEnv *env, jobject, jstring jpath, jint n_gpu_layers) {
+Java_com_example_qwen3_core_LlamaEngine_nativeLoadModelGpu(JNIEnv *env, jobject, jstring jpath, jint n_gpu_layers) {
     const char *path = env->GetStringUTFChars(jpath, nullptr);
 
     auto params = llama_model_default_params();
@@ -113,7 +113,7 @@ Java_com_example_qwen3chat_LlamaEngine_nativeLoadModelGpu(JNIEnv *env, jobject, 
 }
 
 JNIEXPORT jlong JNICALL
-Java_com_example_qwen3chat_LlamaEngine_nativeCreateContext(
+Java_com_example_qwen3_core_LlamaEngine_nativeCreateContext(
         JNIEnv *env, jobject, jlong model_ptr, jint n_ctx, jint deviceTier) {
     auto *model = reinterpret_cast<llama_model *>(model_ptr);
     if (!model) {
@@ -164,14 +164,14 @@ Java_com_example_qwen3chat_LlamaEngine_nativeCreateContext(
 
 // Backward-compatible version (accepts only model_ptr + n_ctx, uses defaults)
 JNIEXPORT jlong JNICALL
-Java_com_example_qwen3chat_LlamaEngine_nativeCreateContextLegacy(
+Java_com_example_qwen3_core_LlamaEngine_nativeCreateContextLegacy(
         JNIEnv *env, jobject, jlong model_ptr, jint n_ctx) {
-    return Java_com_example_qwen3chat_LlamaEngine_nativeCreateContext(
+    return Java_com_example_qwen3_core_LlamaEngine_nativeCreateContext(
         env, nullptr, model_ptr, n_ctx, 1);  // tier 1 = MID default
 }
 
 JNIEXPORT jint JNICALL
-Java_com_example_qwen3chat_LlamaEngine_nativeEvaluatePrompt(
+Java_com_example_qwen3_core_LlamaEngine_nativeEvaluatePrompt(
         JNIEnv *env, jobject, jlong ctx_ptr, jstring jprompt) {
     auto *ctx = reinterpret_cast<llama_context *>(ctx_ptr);
     if (!ctx) {
@@ -217,7 +217,7 @@ Java_com_example_qwen3chat_LlamaEngine_nativeEvaluatePrompt(
 
 // Overload with startPos for incremental eval (avoids re-evaluating cached tokens)
 JNIEXPORT jint JNICALL
-Java_com_example_qwen3chat_LlamaEngine_nativeEvaluatePrompt__JLjava_lang_String_2I(
+Java_com_example_qwen3_core_LlamaEngine_nativeEvaluatePrompt__JLjava_lang_String_2I(
         JNIEnv *env, jobject, jlong ctx_ptr, jstring jprompt, jint startPos) {
     auto *ctx = reinterpret_cast<llama_context *>(ctx_ptr);
     if (!ctx) {
@@ -257,10 +257,52 @@ Java_com_example_qwen3chat_LlamaEngine_nativeEvaluatePrompt__JLjava_lang_String_
     return n_tokens;
 }
 
+// Explicit method for incremental eval with startPos (maps to nativeEvaluatePromptAt in Kotlin)
+JNIEXPORT jint JNICALL
+Java_com_example_qwen3_core_LlamaEngine_nativeEvaluatePromptAt(
+        JNIEnv *env, jobject, jlong ctx_ptr, jstring jprompt, jint startPos) {
+    auto *ctx = reinterpret_cast<llama_context *>(ctx_ptr);
+    if (!ctx) {
+        LOGE("nativeEvaluatePromptAt: null context");
+        return -1;
+    }
+
+    const char *prompt = env->GetStringUTFChars(jprompt, nullptr);
+    const int prompt_len = env->GetStringUTFLength(jprompt);
+
+    const llama_vocab *vocab = llama_model_get_vocab(llama_get_model(ctx));
+
+    // Tokenize
+    int n_tokens = -llama_tokenize(vocab, prompt, prompt_len, nullptr, 0, true, true);
+    std::vector<llama_token> tokens(n_tokens);
+    llama_tokenize(vocab, prompt, prompt_len, tokens.data(), tokens.size(), true, true);
+    env->ReleaseStringUTFChars(jprompt, prompt);
+
+    LOGI("nativeEvaluatePromptAt: %d tokens (cache has %d, startPos=%d)", n_tokens, g_n_tokens_cached, startPos);
+
+    // Evaluate in chunks of n_batch, with positions offset by startPos
+    const int n_batch = llama_n_batch(ctx);
+    for (int i = 0; i < n_tokens; i += n_batch) {
+        int n_eval = std::min(n_batch, n_tokens - i);
+        llama_batch batch = llama_batch_get_one(tokens.data() + i, n_eval);
+        // Set correct positions for incremental eval
+        for (int j = 0; j < n_eval; j++) {
+            batch.pos[j] = startPos + i + j;
+        }
+        if (llama_decode(ctx, batch) != 0) {
+            LOGE("Failed to evaluate prompt at chunk %d", i);
+            return -1;
+        }
+    }
+
+    g_n_tokens_cached += n_tokens;
+    return n_tokens;
+}
+
 /** Start a streaming generation session: init sampler, reset cancel flag */
 JNIEXPORT void JNICALL
-Java_com_example_qwen3chat_LlamaEngine_nativeStartGeneration(
-        JNIEnv *, jobject, jfloat temperature) {
+Java_com_example_qwen3_core_LlamaEngine_nativeStartGeneration(
+        JNIEnv *, jobject, jlong ctx_ptr, jfloat temperature) {
     g_cancelled.store(false);
 
     // Free any previous sampler
@@ -282,7 +324,7 @@ Java_com_example_qwen3chat_LlamaEngine_nativeStartGeneration(
  * Returns null jstring on end-of-generation or cancellation.
  */
 JNIEXPORT jstring JNICALL
-Java_com_example_qwen3chat_LlamaEngine_nativeGenerateNextToken(
+Java_com_example_qwen3_core_LlamaEngine_nativeGenerateNextToken(
         JNIEnv *env, jobject, jlong ctx_ptr) {
     auto *ctx = reinterpret_cast<llama_context *>(ctx_ptr);
     if (!ctx || !g_sampler) {
@@ -333,7 +375,7 @@ Java_com_example_qwen3chat_LlamaEngine_nativeGenerateNextToken(
 
 /** End generation session: free sampler, log stats */
 JNIEXPORT void JNICALL
-Java_com_example_qwen3chat_LlamaEngine_nativeEndGeneration(JNIEnv *, jobject) {
+Java_com_example_qwen3_core_LlamaEngine_nativeEndGeneration(JNIEnv *, jobject, jlong ctx_ptr) {
     if (g_sampler) {
         llama_sampler_free(g_sampler);
         g_sampler = nullptr;
@@ -341,7 +383,7 @@ Java_com_example_qwen3chat_LlamaEngine_nativeEndGeneration(JNIEnv *, jobject) {
 }
 
 JNIEXPORT jstring JNICALL
-Java_com_example_qwen3chat_LlamaEngine_nativeGenerate(
+Java_com_example_qwen3_core_LlamaEngine_nativeGenerate(
         JNIEnv *env, jobject, jlong ctx_ptr, jint max_tokens, jfloat temperature) {
     auto *ctx = reinterpret_cast<llama_context *>(ctx_ptr);
     if (!ctx) {
@@ -384,12 +426,12 @@ Java_com_example_qwen3chat_LlamaEngine_nativeGenerate(
 }
 
 JNIEXPORT jint JNICALL
-Java_com_example_qwen3chat_LlamaEngine_nativeGetCachePosition(JNIEnv *, jobject) {
+Java_com_example_qwen3_core_LlamaEngine_nativeGetCachePosition(JNIEnv *, jobject) {
     return g_n_tokens_cached;
 }
 
 JNIEXPORT void JNICALL
-Java_com_example_qwen3chat_LlamaEngine_nativeResetCache(JNIEnv *, jobject, jlong ctx_ptr) {
+Java_com_example_qwen3_core_LlamaEngine_nativeResetCache(JNIEnv *, jobject, jlong ctx_ptr) {
     auto *ctx = reinterpret_cast<llama_context *>(ctx_ptr);
     if (ctx) {
         llama_memory_t mem = llama_get_memory(ctx);
@@ -400,13 +442,13 @@ Java_com_example_qwen3chat_LlamaEngine_nativeResetCache(JNIEnv *, jobject, jlong
 }
 
 JNIEXPORT void JNICALL
-Java_com_example_qwen3chat_LlamaEngine_nativeCancel(JNIEnv *, jobject) {
+Java_com_example_qwen3_core_LlamaEngine_nativeCancel(JNIEnv *, jobject) {
     g_cancelled.store(true);
     LOGI("Cancellation requested");
 }
 
 JNIEXPORT void JNICALL
-Java_com_example_qwen3chat_LlamaEngine_nativeFreeContext(JNIEnv *, jobject, jlong ctx_ptr) {
+Java_com_example_qwen3_core_LlamaEngine_nativeFreeContext(JNIEnv *, jobject, jlong ctx_ptr) {
     auto *ctx = reinterpret_cast<llama_context *>(ctx_ptr);
     if (ctx) {
         llama_free(ctx);
@@ -416,7 +458,7 @@ Java_com_example_qwen3chat_LlamaEngine_nativeFreeContext(JNIEnv *, jobject, jlon
 }
 
 JNIEXPORT void JNICALL
-Java_com_example_qwen3chat_LlamaEngine_nativeFreeModel(JNIEnv *, jobject, jlong model_ptr) {
+Java_com_example_qwen3_core_LlamaEngine_nativeFreeModel(JNIEnv *, jobject, jlong model_ptr) {
     auto *model = reinterpret_cast<llama_model *>(model_ptr);
     if (model) {
         llama_model_free(model);
@@ -425,23 +467,23 @@ Java_com_example_qwen3chat_LlamaEngine_nativeFreeModel(JNIEnv *, jobject, jlong 
 }
 
 JNIEXPORT void JNICALL
-Java_com_example_qwen3chat_LlamaEngine_nativeCleanup(JNIEnv *, jobject) {
+Java_com_example_qwen3_core_LlamaEngine_nativeCleanup(JNIEnv *, jobject) {
     llama_backend_free();
     LOGI("llama backend freed");
 }
 
 JNIEXPORT jint JNICALL
-Java_com_example_qwen3chat_LlamaEngine_nativeGetDecodeThreads(JNIEnv *, jobject) {
+Java_com_example_qwen3_core_LlamaEngine_nativeGetDecodeThreads(JNIEnv *, jobject) {
     return g_decode_threads;
 }
 
 JNIEXPORT jint JNICALL
-Java_com_example_qwen3chat_LlamaEngine_nativeGetBatchThreads(JNIEnv *, jobject) {
+Java_com_example_qwen3_core_LlamaEngine_nativeGetBatchThreads(JNIEnv *, jobject) {
     return g_batch_threads;
 }
 
 JNIEXPORT jint JNICALL
-Java_com_example_qwen3chat_LlamaEngine_nativeGetBatchSize(JNIEnv *, jobject) {
+Java_com_example_qwen3_core_LlamaEngine_nativeGetBatchSize(JNIEnv *, jobject) {
     return g_batch_size;
 }
 
@@ -553,7 +595,7 @@ static bool probe_opencl(char *name_buf, size_t name_len, long *mem_mb) {
 }
 
 JNIEXPORT jstring JNICALL
-Java_com_example_qwen3chat_LlamaEngine_nativeDetectGpuBackend(JNIEnv *env, jobject) {
+Java_com_example_qwen3_core_LlamaEngine_nativeDetectGpuBackend(JNIEnv *env, jobject) {
     char name_buf[256] = {0};
     long mem_mb = 0;
 
@@ -570,7 +612,7 @@ Java_com_example_qwen3chat_LlamaEngine_nativeDetectGpuBackend(JNIEnv *env, jobje
 }
 
 JNIEXPORT jstring JNICALL
-Java_com_example_qwen3chat_LlamaEngine_nativeGetGpuName(JNIEnv *env, jobject) {
+Java_com_example_qwen3_core_LlamaEngine_nativeGetGpuName(JNIEnv *env, jobject) {
     char name_buf[256] = {0};
     long mem_mb = 0;
 
@@ -582,7 +624,7 @@ Java_com_example_qwen3chat_LlamaEngine_nativeGetGpuName(JNIEnv *env, jobject) {
 }
 
 JNIEXPORT jlong JNICALL
-Java_com_example_qwen3chat_LlamaEngine_nativeGetGpuMemory(JNIEnv *, jobject) {
+Java_com_example_qwen3_core_LlamaEngine_nativeGetGpuMemory(JNIEnv *, jobject) {
     char name_buf[256] = {0};
     long mem_mb = 0;
 
