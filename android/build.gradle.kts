@@ -13,6 +13,8 @@ kotlin {
             implementation(project(":shared:ui"))
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.core.ktx)
+            implementation(libs.koin.android)
+            implementation(libs.koin.compose)
             implementation(compose.runtime)
             implementation(compose.ui)
             implementation(compose.material3)
