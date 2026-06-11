@@ -4,6 +4,8 @@
 #include <vector>
 #include <thread>
 #include <atomic>
+#include <fstream>
+#include <algorithm>
 
 #include "llama.h"
 
@@ -24,6 +26,41 @@ static int g_batch_size = 0;
 
 // Sampler is created once per generation and reused across token calls
 static llama_sampler *g_sampler = nullptr;
+
+// Helper: count big cores on big.LITTLE devices
+// Reads /sys/devices/system/cpu/cpuN/cpufreq/cpuinfo_max_freq and groups by frequency
+// Returns count of cores in the highest-frequency cluster (typically 3-4 cores on Dimensity)
+static int count_big_cores() {
+    int n_cpus = (int) std::thread::hardware_concurrency();
+    if (n_cpus < 1) n_cpus = 4;
+
+    std::vector<int> frequencies;
+    for (int i = 0; i < n_cpus; i++) {
+        std::string path = "/sys/devices/system/cpu/cpu" + std::to_string(i) +
+                          "/cpufreq/cpuinfo_max_freq";
+        std::ifstream file(path);
+        int freq = 0;
+        if (file.is_open()) {
+            file >> freq;
+            file.close();
+        }
+        frequencies.push_back(freq);
+    }
+
+    // Find max frequency and count cores at that frequency
+    if (!frequencies.empty()) {
+        int max_freq = *std::max_element(frequencies.begin(), frequencies.end());
+        if (max_freq > 0) {
+            int big_core_count = std::count(frequencies.begin(), frequencies.end(), max_freq);
+            LOGI("Big-core detection: %d cores at max freq %d kHz", big_core_count, max_freq);
+            return big_core_count;
+        }
+    }
+
+    // Fallback: use hardware_concurrency, but cap at 4 for safety
+    LOGI("Big-core detection failed, using hardware_concurrency=%d capped at 4", n_cpus);
+    return std::min(n_cpus, 4);
+}
 
 extern "C" {
 
@@ -95,10 +132,11 @@ Java_com_example_qwen3chat_LlamaEngine_nativeCreateContext(
         default: ctx_params.n_batch = 512; break;
     }
 
-    // Use all CPU cores — no artificial cap
-    int n_threads = (int) std::thread::hardware_concurrency();
-    if (n_threads < 1) n_threads = 4;
-    // Use all cores for both batch and decode — no reserve
+    // On big.LITTLE devices, restrict to big cores only to avoid thread-stall on little cores
+    // count_big_cores() reads cpuinfo_max_freq per CPU to detect the fast cluster
+    int n_threads = count_big_cores();
+
+    // Use big cores for both batch and decode
     ctx_params.n_threads_batch = n_threads;
     int decode_threads = n_threads;
     ctx_params.n_threads = decode_threads;

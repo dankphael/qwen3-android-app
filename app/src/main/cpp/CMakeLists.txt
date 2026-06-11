@@ -17,6 +17,8 @@ set(GGML_OPENCL_EMBED_KERNELS OFF CACHE BOOL "" FORCE)
 # Android cross-compile: disable native CPU detection, use armv8-a+simd
 set(GGML_NATIVE OFF CACHE BOOL "" FORCE)
 set(GGML_CPU_ARM_ARCH "armv8.2-a" CACHE STRING "" FORCE)
+# Performance: enable Link-Time Optimization
+set(GGML_LTO ON CACHE BOOL "" FORCE)
 
 add_subdirectory(${LLAMA_CPP_DIR} llama.cpp)
 
