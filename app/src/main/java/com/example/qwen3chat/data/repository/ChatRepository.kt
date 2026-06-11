@@ -68,6 +68,10 @@ class ChatRepository(
         chatDao.deleteChatById(chatId)
     }
 
+    suspend fun deleteMessage(messageId: Long) {
+        messageDao.deleteMessageById(messageId)
+    }
+
     suspend fun renameChat(chatId: Long, title: String) {
         chatDao.updateTitle(chatId, title)
     }

@@ -233,6 +233,68 @@ class ChatDetailViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
+    fun regenerate(onError: (String) -> Unit) {
+        val currentMessages = _messages.value
+        // Find last user message
+        val lastUserMessage = currentMessages.lastOrNull { it.role == "user" }
+            ?: return onError("No user message to regenerate from")
+
+        val userText = lastUserMessage.content
+
+        viewModelScope.launch {
+            try {
+                val currentChatId = _chatId.value ?: return@launch onError("No active chat")
+
+                // Delete all messages after (and including) the last assistant message
+                val lastAssistantIndex = currentMessages.indexOfLast { it.role == "assistant" }
+                if (lastAssistantIndex >= 0) {
+                    val messagesToDelete = currentMessages.drop(lastAssistantIndex)
+                    for (msg in messagesToDelete) {
+                        repository.deleteMessage(msg.id)
+                    }
+                }
+
+                // Re-send the last user message to regenerate response
+                sendMessage(userText, onResponseStart = {}, onError = onError)
+            } catch (e: Exception) {
+                onError(e.message ?: "Regeneration failed")
+            }
+        }
+    }
+
+    fun editAndResend(messageId: Long, newText: String, onError: (String) -> Unit) {
+        val currentMessages = _messages.value
+        val messageToEdit = currentMessages.find { it.id == messageId }
+            ?: return onError("Message not found")
+
+        if (messageToEdit.role != "user") {
+            return onError("Can only edit user messages")
+        }
+
+        viewModelScope.launch {
+            try {
+                val currentChatId = _chatId.value ?: return@launch onError("No active chat")
+
+                // Delete all messages after the edited message
+                val editIndex = currentMessages.indexOfFirst { it.id == messageId }
+                if (editIndex >= 0) {
+                    val messagesToDelete = currentMessages.drop(editIndex + 1)
+                    for (msg in messagesToDelete) {
+                        repository.deleteMessage(msg.id)
+                    }
+                }
+
+                // Delete the original message and send the new one
+                repository.deleteMessage(messageId)
+
+                // Send the new text
+                sendMessage(newText, onResponseStart = {}, onError = onError)
+            } catch (e: Exception) {
+                onError(e.message ?: "Edit & resend failed")
+            }
+        }
+    }
+
     private fun onResponseComplete() {
         _isGenerating.value = false
         _tokensPerSecond.value = 0f
