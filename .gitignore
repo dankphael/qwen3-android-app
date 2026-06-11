@@ -1,42 +1,31 @@
-# Build outputs
-app/build/
-app/.cxx/
-app/src/main/cpp/opencl_kernels/
-app/src/main/cpp/opencl_include/
-*.apk
-*.so
-
 # Gradle
 .gradle/
 build/
+**/build/
 local.properties
+
+# Kotlin/Native & KMP
+*.klib
+kotlin-js-store/
+
+# Android
+*.apk
+*.aab
+.cxx/
+
+# iOS / Xcode
+xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+*.xcuserstate
+Pods/
+build-ios/
+llama.xcframework/
 
 # IDE
 .idea/
 *.iml
 .DS_Store
 
-# OS
-Thumbs.db
-
-# Downloaded dependencies (large files)
-app/src/main/cpp/libOpenCL.so
-app/src/main/cpp/libcutils.so
-app/src/main/cpp/libutils.so
-spirv-install/
-vulkan-headers/
-SPIRV-Headers/
-OpenCL-Headers/
-
-# Model files (large)
+# Models (large GGUF — never commit)
 *.gguf
-*.gguf.part
-
-# llama.cpp - use as submodule, don't track directly
-llama.cpp/
-
-# Stub files (generated)
-app/src/main/cpp/libOpenCL_stub.c
-app/src/main/cpp/libOpenCL_stub2.c
-app/src/main/cpp/libOpenCL_wrapper.c
-app/src/main/cpp/ggml-opencl-kernels.h

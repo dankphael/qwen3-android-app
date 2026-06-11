@@ -1,119 +1,95 @@
-# Qwen3 Chat
+# Qwen3 Chat — Kotlin Multiplatform
 
-A personal AI assistant that runs entirely on your Android device. Install the APK, the model downloads automatically, and you're chatting — no cloud, no API keys, fully private.
+On-device LLM inference for **Android and iOS** from one shared Kotlin codebase,
+powered by [llama.cpp](https://github.com/ggml-org/llama.cpp). UI is **Compose
+Multiplatform** (shared). Inference uses **JNI on Android** and **llama.cpp via
+Kotlin/Native cinterop with Metal on iOS**.
 
-## Features
+This is the multiplatform sibling of the Android-only `qwen3-android-app`.
 
-- Lightweight APK — the ~2.5GB model downloads automatically on first launch
-- Real on-device inference powered by [llama.cpp](https://github.com/ggerganov/llama.cpp)
-- Runs fully offline after initial setup
-- Private by design — no data leaves your device
-- Multi-turn conversation with full chat history
-- Supports download resume if interrupted
-
-## How It Works
-
-1. Install the APK
-2. On first launch, the app downloads the quantized model (~2.5GB) from Hugging Face
-3. The model loads into memory (takes ~15-30 seconds)
-4. Chat away — everything runs locally on your phone's CPU
-5. The model is cached — subsequent launches skip the download
-
-## Project Structure
+## Module layout
 
 ```
-qwen3-android-app/
-├── llama.cpp/                          # Inference engine (git submodule)
-├── app/src/main/
-│   ├── cpp/
-│   │   ├── CMakeLists.txt              # Native build config
-│   │   └── llama-jni.cpp               # JNI bridge (C++ ↔ Kotlin)
-│   ├── java/com/example/qwen3chat/
-│   │   ├── MainActivity.kt             # Chat UI, download + loading flow
-│   │   ├── ChatAdapter.kt              # RecyclerView adapter
-│   │   ├── ChatMessage.kt              # Message data class
-│   │   ├── LlamaEngine.kt              # Native method declarations
-│   │   └── QwenModel.kt                # Model download, loading, and inference
-│   ├── res/                            # Layouts, drawables, themes
-│   └── AndroidManifest.xml
-├── build.gradle.kts
-└── settings.gradle.kts
+qwen3-kmp/
+├── shared/core/   :shared:core  — KMP library (no Compose):
+│                    models, device tiers, prompt/QwenModel orchestration,
+│                    InferenceEngine (interface + Android/iOS impls),
+│                    SQLDelight DB + ChatRepository, multiplatform-settings prefs.
+├── shared/ui/     :shared:ui    — Compose Multiplatform UI (App()), iOS MainViewController.
+├── androidApp/    Android application (Compose host + JNI llama-jni.cpp + CMake).
+├── iosApp/        SwiftUI shell hosting the shared Compose UI (create in Xcode on a Mac).
+├── scripts/       build_ios_llama.sh — builds llama.xcframework with Metal.
+└── llama.cpp/     git submodule (engine sources).
 ```
 
-## Building & Installing
+## What works in this scaffold (Phases 0–2 + Android inference seam)
 
-### Prerequisites
-- Android Studio (with NDK and CMake installed via SDK Manager)
-- JDK 17+
+- **Shared pure core** (`:shared:core/commonMain`): `ModelMetadata`, `ChatMessage`,
+  `ReasoningParser`, `DeviceCapability` tier logic, `QwenModel` (ChatML prompt
+  building, incremental cache-aware streaming via pull-based `nextToken()`),
+  `ChatRepository` (SQLDelight) + auto-title, `ModelPreferences`
+  (multiplatform-settings). Covered by `commonTest` (`CoreLogicTest`).
+- **Platform seams as interfaces** (testable, DI-friendly): `InferenceEngine`,
+  `PathProvider`, `DeviceProbe`, `DatabaseDriverFactory` — each with Android and iOS
+  implementations.
+- **Android inference** delegates to the proven `llama-jni.cpp` (copied from the
+  Android repo) through `LlamaEngine`.
+- **iOS inference** scaffolded (`IosInferenceEngine`) with documented cinterop TODOs.
+- **Shared Compose `App()`** placeholder rendering on both platforms.
 
-### Clone with submodules
+## Known gaps / TODO (by plan phase)
 
+- **Phase 3 (Android native alignment):** the copied `androidApp/src/main/cpp/
+  llama-jni.cpp` still uses the **old JNI symbol names** (`Java_com_example_
+  qwen3chat_LlamaEngine_*`) and the original method set. It must be updated to the
+  new package `com_example_qwen3_core_LlamaEngine` and to expose the full surface
+  declared in `LlamaEngine.kt` (`nativeStartGeneration`, `nativeEndGeneration`,
+  `nativeEvaluatePromptAt`, `nativeCancel`, `nativeFreeContext`, `nativeFreeModel`,
+  `nativeCleanup`). Some of these may need small additions to the C++.
+- **Phase 4 (iOS native):** run `scripts/build_ios_llama.sh` on a Mac to produce
+  `llama.xcframework`, enable the cinterop block in `shared/core/build.gradle.kts`,
+  and fill in the `TODO(cinterop)` calls in `IosInferenceEngine`.
+- **Phase 5 (UI):** port the screens (ChatList, ChatDetail with streaming + send-button
+  states + long-press Copy/Share/Regenerate/Edit&Resend + voice, Settings, Diagnostics,
+  ModelSelection, Notes) into `:shared:ui` with JB ViewModels + navigation-compose.
+- **Phase 6:** `GenerationController` (Android foreground service / iOS BGTask +
+  idle-timer), `ModelDownloader` (Ktor on Android, URLSession background on iOS),
+  notifications, voice (`RecognizerIntent` / `SFSpeechRecognizer`).
+- **Tooling:** the Gradle wrapper `.jar`/scripts are not included — run
+  `gradle wrapper --gradle-version 8.11.1` once locally. The `llama.cpp` submodule
+  must be initialized: `git submodule update --init --recursive`.
+
+> This scaffold was assembled in a Linux environment **without** Android SDK/NDK,
+> Xcode, or network access to Gradle/Maven, so it has **not been compiled here**.
+> The shared Kotlin is written to compile; verify with the steps below.
+
+## Build
+
+### Prereqs
 ```bash
-git clone --recurse-submodules https://github.com/dankphael/experiment.git
-cd experiment/qwen3-android-app
+git submodule update --init --recursive       # fetch llama.cpp
+gradle wrapper --gradle-version 8.11.1         # generate ./gradlew
 ```
 
-If you already cloned without `--recurse-submodules`:
+### Shared core tests
 ```bash
-git submodule update --init --recursive
+./gradlew :shared:core:allTests
 ```
 
-### Build the APK
-
+### Android
 ```bash
-./gradlew assembleDebug
+./gradlew :androidApp:assembleDebug
 ```
+Requires Android SDK + NDK 26.x. The CMake build pulls in `llama.cpp` and compiles
+`llama-jni`. `-DCMAKE_BUILD_TYPE=Release` is set in `androidApp` `defaultConfig` so
+the native library is `-O3` even in debug APKs (the key perf fix carried over).
 
-The APK will be at `app/build/outputs/apk/debug/app-debug.apk`.
-
-### Install on your phone
-
-**Option A: USB with ADB**
+### iOS (on a Mac)
 ```bash
-adb install app/build/outputs/apk/debug/app-debug.apk
+./scripts/build_ios_llama.sh            # produces llama.xcframework (Metal)
+# enable the cinterop block in shared/core/build.gradle.kts, then open iosApp in Xcode
 ```
+See `iosApp/README.md`.
 
-**Option B: Transfer manually**
-1. Copy the APK to your phone (USB, Google Drive, email it to yourself, etc.)
-2. On your phone, go to **Settings > Security** and enable **Install from Unknown Sources**
-3. Open the APK file and tap **Install**
-
-**Option C: Android Studio**
-1. Open the project in Android Studio
-2. Connect your phone via USB (enable USB Debugging in Developer Options)
-3. Click the **Run** button
-
-### First launch
-The app will download the model (~2.5GB) over WiFi on first launch, then load it into memory. After that it works fully offline.
-
-## Model
-
-Uses [Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled](https://huggingface.co/Jackrong/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-GGUF) in Q4_K_M quantization (GGUF format, ~2.5GB).
-
-Inference runs on-device via llama.cpp compiled for ARM64. No GPU required — runs on CPU with automatic thread detection.
-
-## Requirements
-
-- Android 8.0+ (API 26)
-- ARM64 device (virtually all modern Android phones)
-- ~4GB free storage (for the model)
-- 6GB+ RAM recommended
-
-## Troubleshooting
-
-### Download fails or stalls
-- Check your internet connection — the model is ~2.5GB
-- Restart the app to resume the download from where it left off
-
-### "Loading model..." takes too long
-- First load takes 15-30 seconds depending on your phone
-- Make sure you have enough free RAM (close other apps)
-
-### App crashes or out of memory
-- Close other apps to free RAM
-- Devices with less than 6GB RAM may struggle with 4B models
-- Check logcat for `LlamaJNI` or `QwenModel` errors
-
-## License
-
-MIT License
+## License / models
+GGUF models (0.5–2.6 GB) are downloaded at runtime, never committed (`.gitignore`).

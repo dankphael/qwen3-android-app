@@ -1,0 +1,60 @@
+CREATE TABLE chats (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL DEFAULT 'New Chat',
+    modelUsed TEXT NOT NULL DEFAULT '',
+    lastMessage TEXT NOT NULL DEFAULT '',
+    createdAt INTEGER NOT NULL,
+    updatedAt INTEGER NOT NULL
+);
+
+CREATE TABLE messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    chatId INTEGER NOT NULL,
+    role TEXT NOT NULL,
+    content TEXT NOT NULL,
+    thinking TEXT,
+    timestamp INTEGER NOT NULL,
+    FOREIGN KEY (chatId) REFERENCES chats(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_messages_chatId ON messages(chatId);
+
+-- Chats -----------------------------------------------------------------
+selectAllChats:
+SELECT * FROM chats ORDER BY updatedAt DESC;
+
+selectChatById:
+SELECT * FROM chats WHERE id = ?;
+
+insertChat:
+INSERT INTO chats(title, modelUsed, lastMessage, createdAt, updatedAt)
+VALUES (?, ?, ?, ?, ?);
+
+lastInsertRowId:
+SELECT last_insert_rowid();
+
+updateChatTitle:
+UPDATE chats SET title = ?, updatedAt = ? WHERE id = ?;
+
+touchChat:
+UPDATE chats SET updatedAt = ? WHERE id = ?;
+
+updateLastMessage:
+UPDATE chats SET lastMessage = ?, updatedAt = ? WHERE id = ?;
+
+deleteChatById:
+DELETE FROM chats WHERE id = ?;
+
+-- Messages --------------------------------------------------------------
+selectMessagesByChat:
+SELECT * FROM messages WHERE chatId = ? ORDER BY timestamp ASC;
+
+insertMessage:
+INSERT INTO messages(chatId, role, content, thinking, timestamp)
+VALUES (?, ?, ?, ?, ?);
+
+deleteMessageById:
+DELETE FROM messages WHERE id = ?;
+
+deleteMessagesByChat:
+DELETE FROM messages WHERE chatId = ?;

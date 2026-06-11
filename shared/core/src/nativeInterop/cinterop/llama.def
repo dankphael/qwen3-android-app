@@ -1,0 +1,11 @@
+headers = llama.h ggml.h
+package = llama.cpp
+
+# Static archives produced by scripts/build_ios_llama.sh and bundled into
+# llama.xcframework. Paths are resolved relative to the cinterop invocation;
+# adjust libraryPaths to wherever the device-slice .a files live.
+staticLibraries = libllama.a libggml.a libggml-base.a libggml-cpu.a libggml-metal.a libggml-blas.a
+libraryPaths = ../../../../llama.xcframework/ios-arm64
+
+compilerOpts = -I../../../../llama.cpp/include -I../../../../llama.cpp/ggml/include
+linkerOpts = -framework Metal -framework MetalKit -framework Foundation -framework Accelerate
