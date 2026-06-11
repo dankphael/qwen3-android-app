@@ -240,6 +240,29 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/textSystemPromptPreview" />
 
+    <!-- Storage label -->
+    <TextView
+        android:id="@+id/labelStorage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Storage"
+        android:textAppearance="@style/TextAppearance.Qwen.TitleMedium"
+        android:textColor="@color/on_surface"
+        android:layout_marginTop="@dimen/space_24"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/divider3" />
+
+    <!-- Model files container (LinearLayout for dynamic list) -->
+    <LinearLayout
+        android:id="@+id/layoutModelFiles"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="@dimen/space_8"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/labelStorage" />
+
     <!-- Diagnostics button -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/buttonDiagnostics"
@@ -252,7 +275,7 @@
         app:cornerRadius="@dimen/download_button_radius"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/divider3"
+        app:layout_constraintTop_toBottomOf="@id/layoutModelFiles"
         tools:ignore="UnusedAttribute" />
 
     <!-- Change Model button -->

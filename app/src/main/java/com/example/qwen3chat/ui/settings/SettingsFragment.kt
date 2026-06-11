@@ -9,6 +9,7 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.example.qwen3chat.R
 import com.example.qwen3chat.DeviceCapability
+import com.example.qwen3chat.ModelMetadata
 import com.example.qwen3chat.ModelPreferences
 import com.example.qwen3chat.ModelSelectionActivity
 import com.example.qwen3chat.databinding.FragmentSettingsBinding
@@ -38,6 +39,7 @@ class SettingsFragment : Fragment() {
         setupMaxTokensSlider()
         setupGpuToggle()
         setupSystemPromptEditor()
+        setupDiskCleanup()
         setupChangeModelButton()
         setupDiagnosticsButton()
         setupDeviceInfo()
@@ -128,6 +130,76 @@ class SettingsFragment : Fragment() {
             .show()
     }
 
+    private fun setupDiskCleanup() {
+        val container = binding.layoutModelFiles
+        container.removeAllViews()
+
+        val selectedModel = modelPreferences.getSelectedModelKey()
+
+        for (model in com.example.qwen3chat.ModelMetadata.ALL) {
+            val modelFile = java.io.File(requireContext().filesDir, model.filename)
+            if (!modelFile.exists()) continue
+
+            val sizeGb = String.format("%.2f", modelFile.length() / (1024f * 1024f * 1024f))
+            val sizeDisplay = "$sizeGb GB"
+
+            // Create a horizontal LinearLayout for the row
+            val row = android.widget.LinearLayout(requireContext()).apply {
+                layoutParams = android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = requireContext().resources.getDimensionPixelSize(R.dimen.space_8)
+                }
+                orientation = android.widget.LinearLayout.HORIZONTAL
+            }
+
+            // Model name + size (TextView)
+            val textView = android.widget.TextView(requireContext()).apply {
+                layoutParams = android.widget.LinearLayout.LayoutParams(
+                    0,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                    1f
+                )
+                text = "${model.displayName} · $sizeDisplay"
+                setTextAppearance(android.R.style.TextAppearance_Small)
+            }
+
+            // Delete button
+            val deleteButton = com.google.android.material.button.MaterialButton(requireContext()).apply {
+                layoutParams = android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    marginStart = requireContext().resources.getDimensionPixelSize(R.dimen.space_8)
+                }
+                text = "Delete"
+                setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
+                isEnabled = model.key != selectedModel
+                setOnClickListener {
+                    if (modelFile.delete()) {
+                        container.removeView(row)
+                        android.widget.Toast.makeText(
+                            requireContext(),
+                            "${model.displayName} deleted",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                    } else {
+                        android.widget.Toast.makeText(
+                            requireContext(),
+                            "Failed to delete ${model.displayName}",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
+
+            row.addView(textView)
+            row.addView(deleteButton)
+            container.addView(row)
+        }
+    }
+
     private fun setupChangeModelButton() {
         binding.buttonChangeModel.setOnClickListener {
             val intent = Intent(requireContext(), ModelSelectionActivity::class.java)
@@ -152,7 +224,7 @@ class SettingsFragment : Fragment() {
         // Build available models string
         val availableModels = deviceCapability.availableModels
         val modelNames = availableModels.joinToString(", ") { model ->
-            val sizeGb = String.format("%.1f", model.sizeBytes / (1024f * 1024f * 1024f))
+            val sizeGb = String.format("%.1f", model.fileSizeBytes / (1024f * 1024f * 1024f))
             "${model.displayName} ($sizeGb GB)"
         }
 
