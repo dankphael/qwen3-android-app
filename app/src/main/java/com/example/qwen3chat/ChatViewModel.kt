@@ -47,19 +47,29 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 val tier = DeviceCapability(getApplication()).tier.ordinal
 
                 // Detect GPU and decide loading strategy
-                val gpuBackend = try { LlamaEngine.nativeDetectGpuBackend() } catch (_: Exception) { "cpu" }
-                val gpuName = try { LlamaEngine.nativeGetGpuName() } catch (_: Exception) { "Unknown" }
-                val gpuMem = try { LlamaEngine.nativeGetGpuMemory() } catch (_: Exception) { 0L }
+                val prefs = ModelPreferences(getApplication())
+                val gpuEnabled = prefs.isGpuEnabled()
+                Log.i(TAG, "GPU preference: enabled=$gpuEnabled")
+
+                val gpuBackend = if (gpuEnabled) try { LlamaEngine.nativeDetectGpuBackend() } catch (_: Exception) { "cpu" } else "cpu"
+                val gpuName = if (gpuEnabled) try { LlamaEngine.nativeGetGpuName() } catch (_: Exception) { "Unknown" } else "N/A (disabled by user)"
+                val gpuMem = if (gpuEnabled) try { LlamaEngine.nativeGetGpuMemory() } catch (_: Exception) { 0L } else 0L
                 Log.i(TAG, "GPU detection: backend=$gpuBackend, name=$gpuName, mem=${gpuMem}MB")
 
                 withContext(Dispatchers.IO) {
-                    if (gpuBackend == "opencl" && gpuMem > 512) {
+                    if (gpuEnabled && gpuBackend == "opencl" && gpuMem > 512) {
                         // Offload all layers to GPU if we have enough GPU memory
                         val nGpuLayers = metadata.totalLayers  // offload everything
                         Log.i(TAG, "Loading model with OpenCL GPU offload ($nGpuLayers layers)")
                         model.loadModelGpu(tier, nGpuLayers)
                     } else {
-                        Log.i(TAG, "Loading model on CPU (GPU: $gpuBackend, ${gpuMem}MB)")
+                        val reason = when {
+                            !gpuEnabled -> "GPU disabled by user"
+                            gpuBackend != "opencl" -> "GPU backend unavailable: $gpuBackend"
+                            gpuMem <= 512 -> "Insufficient GPU memory: ${gpuMem}MB (<512MB required)"
+                            else -> "Unknown"
+                        }
+                        Log.i(TAG, "Loading model on CPU ($reason)")
                         model.loadModel(tier)
                     }
                 }
