@@ -20,6 +20,18 @@ android {
         ndk {
             abiFilters += listOf("arm64-v8a")
         }
+
+        externalNativeBuild {
+            cmake {
+                // Force Release build (-O3) for llama.cpp/ggml even in debug APKs.
+                // Debug builds default to -O0, which causes ~40× slowdown in NEON kernels
+                // (the root cause of the 0.5 tok/s issue). arguments must live in
+                // defaultConfig's cmake block — the top-level android.externalNativeBuild
+                // .cmake block only accepts path + version, which is why placing it there
+                // previously failed to compile.
+                arguments("-DCMAKE_BUILD_TYPE=Release")
+            }
+        }
     }
 
     ndkVersion = "26.1.10909125"
