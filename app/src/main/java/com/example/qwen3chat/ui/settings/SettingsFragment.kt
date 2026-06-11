@@ -37,6 +37,7 @@ class SettingsFragment : Fragment() {
         setupTemperatureSlider()
         setupMaxTokensSlider()
         setupGpuToggle()
+        setupSystemPromptEditor()
         setupChangeModelButton()
         setupDiagnosticsButton()
         setupDeviceInfo()
@@ -87,6 +88,44 @@ class SettingsFragment : Fragment() {
         binding.switchGpuEnabled.setOnCheckedChangeListener { _, isChecked ->
             modelPreferences.saveGpuEnabled(isChecked)
         }
+    }
+
+    private fun setupSystemPromptEditor() {
+        val currentPrompt = modelPreferences.getSystemPrompt()
+        binding.textSystemPromptPreview.text = currentPrompt
+
+        binding.buttonEditSystemPrompt.setOnClickListener {
+            showSystemPromptDialog(currentPrompt)
+        }
+    }
+
+    private fun showSystemPromptDialog(currentPrompt: String) {
+        val input = android.widget.EditText(requireContext()).apply {
+            setText(currentPrompt)
+            setLines(3)
+            maxLines = 5
+        }
+
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Edit System Prompt")
+            .setMessage("Customize how the AI behaves (max 200 chars)")
+            .setView(input)
+            .setNegativeButton("Cancel") { _, _ -> }
+            .setNeutralButton("Reset") { _, _ ->
+                modelPreferences.resetSystemPrompt()
+                binding.textSystemPromptPreview.text = ModelPreferences.DEFAULT_SYSTEM_PROMPT
+            }
+            .setPositiveButton("Save") { _, _ ->
+                val newPrompt = input.text.toString().trim()
+                if (newPrompt.isNotEmpty() && newPrompt.length <= 200) {
+                    modelPreferences.saveSystemPrompt(newPrompt)
+                    binding.textSystemPromptPreview.text = newPrompt
+                    android.widget.Toast.makeText(requireContext(), "Prompt updated", android.widget.Toast.LENGTH_SHORT).show()
+                } else {
+                    android.widget.Toast.makeText(requireContext(), "Prompt must be 1-200 characters", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+            .show()
     }
 
     private fun setupChangeModelButton() {

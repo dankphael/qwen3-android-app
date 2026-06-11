@@ -190,6 +190,45 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/labelGpuEnabled" />
 
+    <!-- System Prompt label -->
+    <TextView
+        android:id="@+id/labelSystemPrompt"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="System Prompt"
+        android:textAppearance="@style/TextAppearance.Qwen.TitleMedium"
+        android:textColor="@color/on_surface"
+        android:layout_marginTop="@dimen/space_24"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/textGpuDesc" />
+
+    <!-- System Prompt edit button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonEditSystemPrompt"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Edit"
+        android:textAppearance="@style/TextAppearance.Qwen.LabelSmall"
+        style="@style/Widget.Material3.Button.TextButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/labelSystemPrompt"
+        app:layout_constraintBottom_toBottomOf="@id/labelSystemPrompt" />
+
+    <!-- System Prompt preview -->
+    <TextView
+        android:id="@+id/textSystemPromptPreview"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="You are a helpful AI assistant."
+        android:textAppearance="@style/TextAppearance.Qwen.BodySmall"
+        android:textColor="@color/on_surface_variant"
+        android:layout_marginTop="@dimen/space_8"
+        android:maxLines="2"
+        android:ellipsize="end"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/labelSystemPrompt" />
+
     <!-- Divider -->
     <View
         android:id="@+id/divider3"
@@ -199,7 +238,7 @@
         android:background="@color/outline_variant"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/textGpuDesc" />
+        app:layout_constraintTop_toBottomOf="@id/textSystemPromptPreview" />
 
     <!-- Diagnostics button -->
     <com.google.android.material.button.MaterialButton

@@ -16,6 +16,7 @@ class QwenModel(private val context: Context, val metadata: ModelMetadata) {
     private var ctxPtr: Long = 0
     private val generating = AtomicBoolean(false)
     private var cachedMessageCount = 0
+    private var systemPrompt: String = ModelPreferences(context).getSystemPrompt()
 
     val isReady: Boolean get() = ctxPtr != 0L
 
@@ -171,7 +172,7 @@ class QwenModel(private val context: Context, val metadata: ModelMetadata) {
     private fun buildPrompt(messages: List<ChatMessage>, isFirstTurn: Boolean = true): String {
         val sb = StringBuilder()
         if (isFirstTurn) {
-            sb.append("<|im_start|>system\nYou are a helpful AI assistant.<|im_end|>\n")
+            sb.append("<|im_start|>system\n$systemPrompt<|im_end|>\n")
         }
         for (msg in messages) {
             val role = if (msg.isUser) "user" else "assistant"

@@ -12,6 +12,8 @@ class ModelPreferences(context: Context) {
         private const val KEY_TEMPERATURE = "temperature"
         private const val KEY_MAX_TOKENS = "max_tokens"
         private const val KEY_GPU_ENABLED = "gpu_enabled"
+        private const val KEY_SYSTEM_PROMPT = "system_prompt"
+        private const val DEFAULT_SYSTEM_PROMPT = "You are a helpful AI assistant."
     }
 
     fun getSelectedModelKey(): String? = prefs.getString(KEY_SELECTED_MODEL, null)
@@ -37,6 +39,12 @@ class ModelPreferences(context: Context) {
     fun isGpuEnabled(): Boolean = prefs.getBoolean(KEY_GPU_ENABLED, true)
 
     fun saveGpuEnabled(value: Boolean) = prefs.edit().putBoolean(KEY_GPU_ENABLED, value).apply()
+
+    fun getSystemPrompt(): String = prefs.getString(KEY_SYSTEM_PROMPT, DEFAULT_SYSTEM_PROMPT) ?: DEFAULT_SYSTEM_PROMPT
+
+    fun saveSystemPrompt(prompt: String) = prefs.edit().putString(KEY_SYSTEM_PROMPT, prompt).apply()
+
+    fun resetSystemPrompt() = prefs.edit().remove(KEY_SYSTEM_PROMPT).apply()
 
     fun migrateFromV1(context: Context): Boolean {
         if (getSelectedModelKey() != null) return false
