@@ -1,204 +1,406 @@
 R"(#pragma OPENCL EXTENSION cl_khr_fp16 : enable
-
-#ifdef cl_intel_subgroups
-#pragma OPENCL EXTENSION cl_intel_subgroups : enable
-#else
-#pragma OPENCL EXTENSION cl_khr_subgroups : enable
-#endif
-
-#ifdef cl_intel_required_subgroup_size
-#pragma OPENCL EXTENSION cl_intel_required_subgroup_size : enable
-#define INTEL_GPU 1
-#define REQD_SUBGROUP_SIZE_16 __attribute__((intel_reqd_sub_group_size(16)))
-#define REQD_SUBGROUP_SIZE_32 __attribute__((intel_reqd_sub_group_size(32)))
-#elif defined(cl_qcom_reqd_sub_group_size)
-#pragma OPENCL EXTENSION cl_qcom_reqd_sub_group_size : enable
-#define ADRENO_GPU 1
-#define REQD_SUBGROUP_SIZE_64  __attribute__((qcom_reqd_sub_group_size("half")))
-#define REQD_SUBGROUP_SIZE_128 __attribute__((qcom_reqd_sub_group_size("full")))
-#endif
-
-//------------------------------------------------------------------------------
-// block_q5_K
-//------------------------------------------------------------------------------
-#define QK_K            256
-#define BLOCK_Q5K_SIZE  176
-#define K_SCALE_SIZE    12
-
-typedef struct {
-    half  d;                    // super-block scale for quantized scales
-    half  dmin;                 // super-block scale for quantized mins
-    uchar scales[K_SCALE_SIZE]; // scales and mins, quantized with 6 bits
-    uchar qh[QK_K/8];           // quants, high bit (1 bit per value, packed 8 per byte)
-    uchar qs[QK_K/2];           // quants, low 4 bits (2 values per byte)
-} block_q5_K;
-
-#undef N_DST
-#undef N_SIMDGROUP
-#undef N_SIMDWIDTH
-
-#ifdef INTEL_GPU
-#define N_DST       4
-#define N_SIMDGROUP 1
-#define N_SIMDWIDTH 16
-#elif defined(ADRENO_GPU)
-#define N_DST       16
-#define N_SIMDGROUP 2
-#define N_SIMDWIDTH 64
-#endif
-
-#undef  BLOCK_STRIDE
-// number of (super) blocks each subgroup processes
-// each thread in a subgroup processes a block (32 weights)
-#define BLOCK_STRIDE (N_SIMDWIDTH/8)
-
-#ifdef INTEL_GPU
-REQD_SUBGROUP_SIZE_16
-#elif defined (ADRENO_GPU)
-REQD_SUBGROUP_SIZE_64
-#endif
-kernel void kernel_mul_mv_q5_K_f32_flat(
-    global uchar * src0_q,
-    global uchar * src0_qh,
-    global uchar * src0_s,
-    global half  * src0_d,
-    global half  * src0_dm,
-    global char  * src1,
-    int offset1,
-    global char  * dst,
-    int offsetd,
-    int ne00,
-    int ne01,
-    ulong nb01,
-    ulong nb02,
-    ulong nb03,
-    int ne12,
-    ulong nb11,
-    ulong nb12,
-    ulong nb13,
-    int ne0,
-    int ne1,
-    int r2,
-    int r3
-) {
-    src1 = src1 + offset1;
-    dst  = dst  + offsetd;
-
-    ushort kmask1 = 0x3f3f;
-    ushort kmask2 = 0x0f0f;
-    ushort kmask3 = 0xc0c0;
-
-    int ix = get_sub_group_local_id()/8;
-    int it = get_sub_group_local_id()%8;
-    int iq = it/4;
-    int ir = it%4;
-
-    int nb = ne00/QK_K;
-
-    int r0 = get_group_id(0);
-    int r1 = get_group_id(1);
-    int im = get_group_id(2);
-    int first_row = (r0 * N_SIMDGROUP + get_sub_group_id()) * N_DST;
-
-    int i12 = im%ne12;
-    int i13 = im/ne12;
-
-    int offset_src0 = (first_row*nb01 + (i12/r2)*nb02 + (i13/r3)*nb03)/BLOCK_Q5K_SIZE;
-    uint blk = nb01 / BLOCK_Q5K_SIZE;
-    global uchar * blk_q  = (global uchar *)src0_q  + offset_src0*(QK_K/2);
-    global uchar * blk_qh = (global uchar *)src0_qh + offset_src0*(QK_K/8);
-    global uchar * blk_s  = (global uchar *)src0_s  + offset_src0*K_SCALE_SIZE;
-    global half  * blk_d  = (global half  *)src0_d  + offset_src0;
-    global half  * blk_dm = (global half  *)src0_dm + offset_src0;
-
-    int offset_src1 = r1*nb11 + (i12)*nb12 + (i13)*nb13;
-    global float * y = (global float *)(src1 + offset_src1);
-
-    float yl[16];
-    float yh[16];
-    float sumf[N_DST] = {0.f};
-    float all_sum;
-
-    global float * y4 = y + ix * QK_K + 64 * iq + 8 * ir;
-
-    uchar u1_lo = (uchar)(1 << (2*iq));
-    uchar u2_lo = (uchar)(2 << (2*iq));
-    uchar u1_hi = (uchar)(1 << (2*iq + 4));
-    uchar u2_hi = (uchar)(2 << (2*iq + 4));
-
-    ushort  sc16[4];
-    uchar * sc8 = (uchar *)sc16;
-
-    for (int ib = ix; ib < nb; ib += BLOCK_STRIDE) {
-        float4 sumy = {0.f, 0.f, 0.f, 0.f};
-        for (int i = 0; i < 8; ++i) {
-            yl[i+0] = y4[i+0];
-            sumy.s0 += yl[i+0];
-
-            yl[i+8] = y4[i+32];
-            sumy.s1 += yl[i+8];
-
-            yh[i+0] = y4[i+128];
-            sumy.s2 += yh[i+0];
-
-            yh[i+8] = y4[i+160];
-            sumy.s3 += yh[i+8];
-        }
-
-        global ushort * q1 = (global ushort *)(blk_q  + ib * (QK_K/2)) + (16 * iq + 4 * ir);
-        global uchar  * qh = (global uchar  *)(blk_qh + ib * (QK_K/8)) + 8 * ir;
-        global ushort * sc = (global ushort *)(blk_s  + ib * K_SCALE_SIZE) + iq;
-        global half   * d  = blk_d  + ib;
-        global half   * dm = blk_dm + ib;
-
-        for (int row = 0; row < N_DST; row++) {
-            sc16[0] = sc[0] & kmask1;
-            sc16[1] = sc[2] & kmask1;
-            sc16[2] = ((sc[4] >> 0) & kmask2) | ((sc[0] & kmask3) >> 2);
-            sc16[3] = ((sc[4] >> 4) & kmask2) | ((sc[2] & kmask3) >> 2);
-
-            global ushort * q2 = q1 + 32;
-
-            float4 acc1 = {0.f, 0.f, 0.f, 0.f};
-            float4 acc2 = {0.f, 0.f, 0.f, 0.f};
-            for (int i = 0; i < 8; i += 2) {
-                acc1.s0 += yl[i+0] * ((q1[i/2] & 0x000F) + (qh[i+0] & u1_lo ? 16.f       : 0.f));
-                acc1.s1 += yl[i+1] * ((q1[i/2] & 0x0F00) + (qh[i+1] & u1_lo ? 16.f*256.f : 0.f));
-                acc1.s2 += yl[i+8] * ((q1[i/2] & 0x00F0) + (qh[i+0] & u2_lo ? 16.f*16.f  : 0.f));
-                acc1.s3 += yl[i+9] * ((q1[i/2] & 0xF000) + (qh[i+1] & u2_lo ? 16.f*4096.f: 0.f));
-                acc2.s0 += yh[i+0] * ((q2[i/2] & 0x000F) + (qh[i+0] & u1_hi ? 16.f       : 0.f));
-                acc2.s1 += yh[i+1] * ((q2[i/2] & 0x0F00) + (qh[i+1] & u1_hi ? 16.f*256.f : 0.f));
-                acc2.s2 += yh[i+8] * ((q2[i/2] & 0x00F0) + (qh[i+0] & u2_hi ? 16.f*16.f  : 0.f));
-                acc2.s3 += yh[i+9] * ((q2[i/2] & 0xF000) + (qh[i+1] & u2_hi ? 16.f*4096.f: 0.f));
-            }
-
-            float dall = *d;
-            float dmin = *dm;
-            sumf[row] += dall * ((acc1.s0 + 1.f/256.f * acc1.s1) * sc8[0] +
-                                 (acc1.s2 + 1.f/256.f * acc1.s3) * sc8[1] * 1.f/16.f +
-                                 (acc2.s0 + 1.f/256.f * acc2.s1) * sc8[4] +
-                                 (acc2.s2 + 1.f/256.f * acc2.s3) * sc8[5] * 1.f/16.f) -
-                         dmin * (sumy.s0 * sc8[2] + sumy.s1 * sc8[3] + sumy.s2 * sc8[6] + sumy.s3 * sc8[7]);
-
-            q1 += blk*64;
-            qh += blk*32;
-            sc += blk*6;
-            d  += blk;
-            dm += blk;
-        }
-
-        y4 += BLOCK_STRIDE * QK_K;
-    }
-
-    global float * dst_f32 = (global float *) dst + im*ne0*ne1 + r1*ne0;
-
-    for (int row = 0; row < N_DST; ++row) {
-        all_sum = sub_group_reduce_add(sumf[row]);
-        if (first_row + row < ne01) {
-            if (get_sub_group_local_id() == 0) {
-                dst_f32[first_row + row] = all_sum;
-            }
-        }
-    }
-}
+)"
+R"(
+)"
+R"(#ifdef cl_intel_subgroups
+)"
+R"(#pragma OPENCL EXTENSION cl_intel_subgroups : enable
+)"
+R"(#else
+)"
+R"(#pragma OPENCL EXTENSION cl_khr_subgroups : enable
+)"
+R"(#endif
+)"
+R"(
+)"
+R"(#ifdef cl_intel_required_subgroup_size
+)"
+R"(#pragma OPENCL EXTENSION cl_intel_required_subgroup_size : enable
+)"
+R"(#define INTEL_GPU 1
+)"
+R"(#define REQD_SUBGROUP_SIZE_16 __attribute__((intel_reqd_sub_group_size(16)))
+)"
+R"(#define REQD_SUBGROUP_SIZE_32 __attribute__((intel_reqd_sub_group_size(32)))
+)"
+R"(#elif defined(cl_qcom_reqd_sub_group_size)
+)"
+R"(#pragma OPENCL EXTENSION cl_qcom_reqd_sub_group_size : enable
+)"
+R"(#define ADRENO_GPU 1
+)"
+R"(#define REQD_SUBGROUP_SIZE_64  __attribute__((qcom_reqd_sub_group_size("half")))
+)"
+R"(#define REQD_SUBGROUP_SIZE_128 __attribute__((qcom_reqd_sub_group_size("full")))
+)"
+R"(#endif
+)"
+R"(
+)"
+R"(//------------------------------------------------------------------------------
+)"
+R"(// block_q5_K
+)"
+R"(//------------------------------------------------------------------------------
+)"
+R"(#define QK_K            256
+)"
+R"(#define BLOCK_Q5K_SIZE  176
+)"
+R"(#define K_SCALE_SIZE    12
+)"
+R"(
+)"
+R"(typedef struct {
+)"
+R"(    half  d;                    // super-block scale for quantized scales
+)"
+R"(    half  dmin;                 // super-block scale for quantized mins
+)"
+R"(    uchar scales[K_SCALE_SIZE]; // scales and mins, quantized with 6 bits
+)"
+R"(    uchar qh[QK_K/8];           // quants, high bit (1 bit per value, packed 8 per byte)
+)"
+R"(    uchar qs[QK_K/2];           // quants, low 4 bits (2 values per byte)
+)"
+R"(} block_q5_K;
+)"
+R"(
+)"
+R"(#undef N_DST
+)"
+R"(#undef N_SIMDGROUP
+)"
+R"(#undef N_SIMDWIDTH
+)"
+R"(
+)"
+R"(#ifdef INTEL_GPU
+)"
+R"(#define N_DST       4
+)"
+R"(#define N_SIMDGROUP 1
+)"
+R"(#define N_SIMDWIDTH 16
+)"
+R"(#elif defined(ADRENO_GPU)
+)"
+R"(#define N_DST       16
+)"
+R"(#define N_SIMDGROUP 2
+)"
+R"(#define N_SIMDWIDTH 64
+)"
+R"(#endif
+)"
+R"(
+)"
+R"(#undef  BLOCK_STRIDE
+)"
+R"(// number of (super) blocks each subgroup processes
+)"
+R"(// each thread in a subgroup processes a block (32 weights)
+)"
+R"(#define BLOCK_STRIDE (N_SIMDWIDTH/8)
+)"
+R"(
+)"
+R"(#ifdef INTEL_GPU
+)"
+R"(REQD_SUBGROUP_SIZE_16
+)"
+R"(#elif defined (ADRENO_GPU)
+)"
+R"(REQD_SUBGROUP_SIZE_64
+)"
+R"(#endif
+)"
+R"(kernel void kernel_mul_mv_q5_K_f32_flat(
+)"
+R"(    global uchar * src0_q,
+)"
+R"(    global uchar * src0_qh,
+)"
+R"(    global uchar * src0_s,
+)"
+R"(    global half  * src0_d,
+)"
+R"(    global half  * src0_dm,
+)"
+R"(    global char  * src1,
+)"
+R"(    int offset1,
+)"
+R"(    global char  * dst,
+)"
+R"(    int offsetd,
+)"
+R"(    int ne00,
+)"
+R"(    int ne01,
+)"
+R"(    ulong nb01,
+)"
+R"(    ulong nb02,
+)"
+R"(    ulong nb03,
+)"
+R"(    int ne12,
+)"
+R"(    ulong nb11,
+)"
+R"(    ulong nb12,
+)"
+R"(    ulong nb13,
+)"
+R"(    int ne0,
+)"
+R"(    int ne1,
+)"
+R"(    int r2,
+)"
+R"(    int r3
+)"
+R"() {
+)"
+R"(    src1 = src1 + offset1;
+)"
+R"(    dst  = dst  + offsetd;
+)"
+R"(
+)"
+R"(    ushort kmask1 = 0x3f3f;
+)"
+R"(    ushort kmask2 = 0x0f0f;
+)"
+R"(    ushort kmask3 = 0xc0c0;
+)"
+R"(
+)"
+R"(    int ix = get_sub_group_local_id()/8;
+)"
+R"(    int it = get_sub_group_local_id()%8;
+)"
+R"(    int iq = it/4;
+)"
+R"(    int ir = it%4;
+)"
+R"(
+)"
+R"(    int nb = ne00/QK_K;
+)"
+R"(
+)"
+R"(    int r0 = get_group_id(0);
+)"
+R"(    int r1 = get_group_id(1);
+)"
+R"(    int im = get_group_id(2);
+)"
+R"(    int first_row = (r0 * N_SIMDGROUP + get_sub_group_id()) * N_DST;
+)"
+R"(
+)"
+R"(    int i12 = im%ne12;
+)"
+R"(    int i13 = im/ne12;
+)"
+R"(
+)"
+R"(    int offset_src0 = (first_row*nb01 + (i12/r2)*nb02 + (i13/r3)*nb03)/BLOCK_Q5K_SIZE;
+)"
+R"(    uint blk = nb01 / BLOCK_Q5K_SIZE;
+)"
+R"(    global uchar * blk_q  = (global uchar *)src0_q  + offset_src0*(QK_K/2);
+)"
+R"(    global uchar * blk_qh = (global uchar *)src0_qh + offset_src0*(QK_K/8);
+)"
+R"(    global uchar * blk_s  = (global uchar *)src0_s  + offset_src0*K_SCALE_SIZE;
+)"
+R"(    global half  * blk_d  = (global half  *)src0_d  + offset_src0;
+)"
+R"(    global half  * blk_dm = (global half  *)src0_dm + offset_src0;
+)"
+R"(
+)"
+R"(    int offset_src1 = r1*nb11 + (i12)*nb12 + (i13)*nb13;
+)"
+R"(    global float * y = (global float *)(src1 + offset_src1);
+)"
+R"(
+)"
+R"(    float yl[16];
+)"
+R"(    float yh[16];
+)"
+R"(    float sumf[N_DST] = {0.f};
+)"
+R"(    float all_sum;
+)"
+R"(
+)"
+R"(    global float * y4 = y + ix * QK_K + 64 * iq + 8 * ir;
+)"
+R"(
+)"
+R"(    uchar u1_lo = (uchar)(1 << (2*iq));
+)"
+R"(    uchar u2_lo = (uchar)(2 << (2*iq));
+)"
+R"(    uchar u1_hi = (uchar)(1 << (2*iq + 4));
+)"
+R"(    uchar u2_hi = (uchar)(2 << (2*iq + 4));
+)"
+R"(
+)"
+R"(    ushort  sc16[4];
+)"
+R"(    uchar * sc8 = (uchar *)sc16;
+)"
+R"(
+)"
+R"(    for (int ib = ix; ib < nb; ib += BLOCK_STRIDE) {
+)"
+R"(        float4 sumy = {0.f, 0.f, 0.f, 0.f};
+)"
+R"(        for (int i = 0; i < 8; ++i) {
+)"
+R"(            yl[i+0] = y4[i+0];
+)"
+R"(            sumy.s0 += yl[i+0];
+)"
+R"(
+)"
+R"(            yl[i+8] = y4[i+32];
+)"
+R"(            sumy.s1 += yl[i+8];
+)"
+R"(
+)"
+R"(            yh[i+0] = y4[i+128];
+)"
+R"(            sumy.s2 += yh[i+0];
+)"
+R"(
+)"
+R"(            yh[i+8] = y4[i+160];
+)"
+R"(            sumy.s3 += yh[i+8];
+)"
+R"(        }
+)"
+R"(
+)"
+R"(        global ushort * q1 = (global ushort *)(blk_q  + ib * (QK_K/2)) + (16 * iq + 4 * ir);
+)"
+R"(        global uchar  * qh = (global uchar  *)(blk_qh + ib * (QK_K/8)) + 8 * ir;
+)"
+R"(        global ushort * sc = (global ushort *)(blk_s  + ib * K_SCALE_SIZE) + iq;
+)"
+R"(        global half   * d  = blk_d  + ib;
+)"
+R"(        global half   * dm = blk_dm + ib;
+)"
+R"(
+)"
+R"(        for (int row = 0; row < N_DST; row++) {
+)"
+R"(            sc16[0] = sc[0] & kmask1;
+)"
+R"(            sc16[1] = sc[2] & kmask1;
+)"
+R"(            sc16[2] = ((sc[4] >> 0) & kmask2) | ((sc[0] & kmask3) >> 2);
+)"
+R"(            sc16[3] = ((sc[4] >> 4) & kmask2) | ((sc[2] & kmask3) >> 2);
+)"
+R"(
+)"
+R"(            global ushort * q2 = q1 + 32;
+)"
+R"(
+)"
+R"(            float4 acc1 = {0.f, 0.f, 0.f, 0.f};
+)"
+R"(            float4 acc2 = {0.f, 0.f, 0.f, 0.f};
+)"
+R"(            for (int i = 0; i < 8; i += 2) {
+)"
+R"(                acc1.s0 += yl[i+0] * ((q1[i/2] & 0x000F) + (qh[i+0] & u1_lo ? 16.f       : 0.f));
+)"
+R"(                acc1.s1 += yl[i+1] * ((q1[i/2] & 0x0F00) + (qh[i+1] & u1_lo ? 16.f*256.f : 0.f));
+)"
+R"(                acc1.s2 += yl[i+8] * ((q1[i/2] & 0x00F0) + (qh[i+0] & u2_lo ? 16.f*16.f  : 0.f));
+)"
+R"(                acc1.s3 += yl[i+9] * ((q1[i/2] & 0xF000) + (qh[i+1] & u2_lo ? 16.f*4096.f: 0.f));
+)"
+R"(                acc2.s0 += yh[i+0] * ((q2[i/2] & 0x000F) + (qh[i+0] & u1_hi ? 16.f       : 0.f));
+)"
+R"(                acc2.s1 += yh[i+1] * ((q2[i/2] & 0x0F00) + (qh[i+1] & u1_hi ? 16.f*256.f : 0.f));
+)"
+R"(                acc2.s2 += yh[i+8] * ((q2[i/2] & 0x00F0) + (qh[i+0] & u2_hi ? 16.f*16.f  : 0.f));
+)"
+R"(                acc2.s3 += yh[i+9] * ((q2[i/2] & 0xF000) + (qh[i+1] & u2_hi ? 16.f*4096.f: 0.f));
+)"
+R"(            }
+)"
+R"(
+)"
+R"(            float dall = *d;
+)"
+R"(            float dmin = *dm;
+)"
+R"(            sumf[row] += dall * ((acc1.s0 + 1.f/256.f * acc1.s1) * sc8[0] +
+)"
+R"(                                 (acc1.s2 + 1.f/256.f * acc1.s3) * sc8[1] * 1.f/16.f +
+)"
+R"(                                 (acc2.s0 + 1.f/256.f * acc2.s1) * sc8[4] +
+)"
+R"(                                 (acc2.s2 + 1.f/256.f * acc2.s3) * sc8[5] * 1.f/16.f) -
+)"
+R"(                         dmin * (sumy.s0 * sc8[2] + sumy.s1 * sc8[3] + sumy.s2 * sc8[6] + sumy.s3 * sc8[7]);
+)"
+R"(
+)"
+R"(            q1 += blk*64;
+)"
+R"(            qh += blk*32;
+)"
+R"(            sc += blk*6;
+)"
+R"(            d  += blk;
+)"
+R"(            dm += blk;
+)"
+R"(        }
+)"
+R"(
+)"
+R"(        y4 += BLOCK_STRIDE * QK_K;
+)"
+R"(    }
+)"
+R"(
+)"
+R"(    global float * dst_f32 = (global float *) dst + im*ne0*ne1 + r1*ne0;
+)"
+R"(
+)"
+R"(    for (int row = 0; row < N_DST; ++row) {
+)"
+R"(        all_sum = sub_group_reduce_add(sumf[row]);
+)"
+R"(        if (first_row + row < ne01) {
+)"
+R"(            if (get_sub_group_local_id() == 0) {
+)"
+R"(                dst_f32[first_row + row] = all_sum;
+)"
+R"(            }
+)"
+R"(        }
+)"
+R"(    }
+)"
+R"(}
 )"

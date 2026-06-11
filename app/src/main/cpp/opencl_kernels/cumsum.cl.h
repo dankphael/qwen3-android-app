@@ -1,140 +1,278 @@
 R"(#pragma OPENCL EXTENSION cl_khr_fp16 : enable
-
-#ifdef cl_intel_required_subgroup_size
-#pragma OPENCL EXTENSION cl_intel_required_subgroup_size : enable
-#define INTEL_GPU 1
-#define REQD_SUBGROUP_SIZE_16 __attribute__((intel_reqd_sub_group_size(16)))
-#define REQD_SUBGROUP_SIZE_32 __attribute__((intel_reqd_sub_group_size(32)))
-#elif defined(cl_qcom_reqd_sub_group_size)
-#pragma OPENCL EXTENSION cl_qcom_reqd_sub_group_size : enable
-#define ADRENO_GPU 1
-#define REQD_SUBGROUP_SIZE_64  __attribute__((qcom_reqd_sub_group_size("half")))
-#define REQD_SUBGROUP_SIZE_128 __attribute__((qcom_reqd_sub_group_size("full")))
-#endif
-
-// max workgroup size is usually 1024, this covers various subgroups sizes
-#define MAX_SUBGROUPS 128
-
-#ifdef INTEL_GPU
-REQD_SUBGROUP_SIZE_32
-#elif defined (ADRENO_GPU)
-REQD_SUBGROUP_SIZE_64
-#endif
-kernel void kernel_cumsum_blk(
-        global char * src0,
-        ulong offset0,
-        global char * tmp,
-        global char * dst,
-        ulong offsetd,
-        int   ne00,
-        int   ne01,
-        int   ne02,
-        int   ne03,
-        ulong nb00,
-        ulong nb01,
-        ulong nb02,
-        ulong nb03,
-        uint net0,
-        uint net1,
-        uint net2
-) {
-    src0 = src0 + offset0;
-    dst  = dst + offsetd;
-
-    const int i3 = get_group_id(2);
-    const int i2 = get_group_id(1);
-    const int i1 = get_group_id(0);
-
-    const int nth = get_local_size(0);
-    const int tid = get_local_id(0);
-
-    const uint sg_size = get_sub_group_size();
-    const uint sg_id = get_sub_group_id();
-    const uint sg_lid = get_sub_group_local_id();
-
-    const int ib = i1 / ne01;
-    const int i00 = ib * nth;
-    const int i01 = i1 % ne01;
-    const int i02 = i2;
-    const int i03 = i3;
-
-    global const float * src0_row = (global const float *)(src0 + i03*nb03 + i02*nb02 + i01*nb01);
-    global       float * tmp_row  = (global float *)tmp + net0 * i01 + net0 * net1 * i02 + net0 * net1 * net2 * i03;
-    global       float * dst_row  = (global float *)dst + i03*ne02*ne01*ne00 + i02*ne01*ne00 + i01*ne00;
-
-    __local float partial[MAX_SUBGROUPS];
-
-    float v = 0.0f;
-    if (i00 + tid < ne00) {
-        v = src0_row[i00 + tid];
-    }
-
-    float s = sub_group_scan_inclusive_add(v);
-    if (sg_lid == sg_size - 1) {
-        partial[sg_id] = s;
-    }
-    barrier(CLK_LOCAL_MEM_FENCE);
-
-    // NB: subgroup size should be larger than number of subgroups
-    // assuming max workgroup size of 1024, subgroup size should be >= 32
-    if (sg_id == 0) {
-        float x = 0.0f;
-        if (sg_lid < get_num_sub_groups()) {
-            x = partial[sg_lid];
-        }
-        float ex = sub_group_scan_exclusive_add(x);
-        if (sg_lid < get_num_sub_groups()) {
-            partial[sg_lid] = ex;
-        }
-    }
-    barrier(CLK_LOCAL_MEM_FENCE);
-
-    s += partial[sg_id];
-
-    if (i00 + tid < ne00) {
-        dst_row[i00 + tid] = s;
-    }
-    if (ne00 > nth && tid == nth - 1) {
-        tmp_row[ib] = s;
-    }
-}
-
-kernel void kernel_cumsum_add(
-        global char * tmp,
-        global char * dst,
-        ulong offsetd,
-        int   ne00,
-        int   ne01,
-        int   ne02,
-        int   ne03,
-        uint nbt0,
-        uint nbt1,
-        uint nbt2,
-        uint nbt3
-) {
-    dst  = dst + offsetd;
-
-    const int i3 = get_group_id(2);
-    const int i2 = get_group_id(1);
-    const int i1 = get_group_id(0);
-
-    const int nth = get_local_size(0);
-    const int tid = get_local_id(0);
-
-    const int ib = i1 / ne01;
-    if (ib == 0) {
-        return;
-    }
-    const int i00 = ib * nth;
-    const int i01 = i1 % ne01;
-    const int i02 = i2;
-    const int i03 = i3;
-
-    global float * tmp_row  = (global float *)(tmp + nbt1 * i01 + nbt2 * i02 + nbt3 * i03);
-    global float * dst_row  = (global float *)dst + i03*ne02*ne01*ne00 + i02*ne01*ne00 + i01*ne00;
-
-    if (i00 + tid < ne00) {
-        dst_row[i00 + tid] += tmp_row[ib - 1];
-    }
-}
+)"
+R"(
+)"
+R"(#ifdef cl_intel_required_subgroup_size
+)"
+R"(#pragma OPENCL EXTENSION cl_intel_required_subgroup_size : enable
+)"
+R"(#define INTEL_GPU 1
+)"
+R"(#define REQD_SUBGROUP_SIZE_16 __attribute__((intel_reqd_sub_group_size(16)))
+)"
+R"(#define REQD_SUBGROUP_SIZE_32 __attribute__((intel_reqd_sub_group_size(32)))
+)"
+R"(#elif defined(cl_qcom_reqd_sub_group_size)
+)"
+R"(#pragma OPENCL EXTENSION cl_qcom_reqd_sub_group_size : enable
+)"
+R"(#define ADRENO_GPU 1
+)"
+R"(#define REQD_SUBGROUP_SIZE_64  __attribute__((qcom_reqd_sub_group_size("half")))
+)"
+R"(#define REQD_SUBGROUP_SIZE_128 __attribute__((qcom_reqd_sub_group_size("full")))
+)"
+R"(#endif
+)"
+R"(
+)"
+R"(// max workgroup size is usually 1024, this covers various subgroups sizes
+)"
+R"(#define MAX_SUBGROUPS 128
+)"
+R"(
+)"
+R"(#ifdef INTEL_GPU
+)"
+R"(REQD_SUBGROUP_SIZE_32
+)"
+R"(#elif defined (ADRENO_GPU)
+)"
+R"(REQD_SUBGROUP_SIZE_64
+)"
+R"(#endif
+)"
+R"(kernel void kernel_cumsum_blk(
+)"
+R"(        global char * src0,
+)"
+R"(        ulong offset0,
+)"
+R"(        global char * tmp,
+)"
+R"(        global char * dst,
+)"
+R"(        ulong offsetd,
+)"
+R"(        int   ne00,
+)"
+R"(        int   ne01,
+)"
+R"(        int   ne02,
+)"
+R"(        int   ne03,
+)"
+R"(        ulong nb00,
+)"
+R"(        ulong nb01,
+)"
+R"(        ulong nb02,
+)"
+R"(        ulong nb03,
+)"
+R"(        uint net0,
+)"
+R"(        uint net1,
+)"
+R"(        uint net2
+)"
+R"() {
+)"
+R"(    src0 = src0 + offset0;
+)"
+R"(    dst  = dst + offsetd;
+)"
+R"(
+)"
+R"(    const int i3 = get_group_id(2);
+)"
+R"(    const int i2 = get_group_id(1);
+)"
+R"(    const int i1 = get_group_id(0);
+)"
+R"(
+)"
+R"(    const int nth = get_local_size(0);
+)"
+R"(    const int tid = get_local_id(0);
+)"
+R"(
+)"
+R"(    const uint sg_size = get_sub_group_size();
+)"
+R"(    const uint sg_id = get_sub_group_id();
+)"
+R"(    const uint sg_lid = get_sub_group_local_id();
+)"
+R"(
+)"
+R"(    const int ib = i1 / ne01;
+)"
+R"(    const int i00 = ib * nth;
+)"
+R"(    const int i01 = i1 % ne01;
+)"
+R"(    const int i02 = i2;
+)"
+R"(    const int i03 = i3;
+)"
+R"(
+)"
+R"(    global const float * src0_row = (global const float *)(src0 + i03*nb03 + i02*nb02 + i01*nb01);
+)"
+R"(    global       float * tmp_row  = (global float *)tmp + net0 * i01 + net0 * net1 * i02 + net0 * net1 * net2 * i03;
+)"
+R"(    global       float * dst_row  = (global float *)dst + i03*ne02*ne01*ne00 + i02*ne01*ne00 + i01*ne00;
+)"
+R"(
+)"
+R"(    __local float partial[MAX_SUBGROUPS];
+)"
+R"(
+)"
+R"(    float v = 0.0f;
+)"
+R"(    if (i00 + tid < ne00) {
+)"
+R"(        v = src0_row[i00 + tid];
+)"
+R"(    }
+)"
+R"(
+)"
+R"(    float s = sub_group_scan_inclusive_add(v);
+)"
+R"(    if (sg_lid == sg_size - 1) {
+)"
+R"(        partial[sg_id] = s;
+)"
+R"(    }
+)"
+R"(    barrier(CLK_LOCAL_MEM_FENCE);
+)"
+R"(
+)"
+R"(    // NB: subgroup size should be larger than number of subgroups
+)"
+R"(    // assuming max workgroup size of 1024, subgroup size should be >= 32
+)"
+R"(    if (sg_id == 0) {
+)"
+R"(        float x = 0.0f;
+)"
+R"(        if (sg_lid < get_num_sub_groups()) {
+)"
+R"(            x = partial[sg_lid];
+)"
+R"(        }
+)"
+R"(        float ex = sub_group_scan_exclusive_add(x);
+)"
+R"(        if (sg_lid < get_num_sub_groups()) {
+)"
+R"(            partial[sg_lid] = ex;
+)"
+R"(        }
+)"
+R"(    }
+)"
+R"(    barrier(CLK_LOCAL_MEM_FENCE);
+)"
+R"(
+)"
+R"(    s += partial[sg_id];
+)"
+R"(
+)"
+R"(    if (i00 + tid < ne00) {
+)"
+R"(        dst_row[i00 + tid] = s;
+)"
+R"(    }
+)"
+R"(    if (ne00 > nth && tid == nth - 1) {
+)"
+R"(        tmp_row[ib] = s;
+)"
+R"(    }
+)"
+R"(}
+)"
+R"(
+)"
+R"(kernel void kernel_cumsum_add(
+)"
+R"(        global char * tmp,
+)"
+R"(        global char * dst,
+)"
+R"(        ulong offsetd,
+)"
+R"(        int   ne00,
+)"
+R"(        int   ne01,
+)"
+R"(        int   ne02,
+)"
+R"(        int   ne03,
+)"
+R"(        uint nbt0,
+)"
+R"(        uint nbt1,
+)"
+R"(        uint nbt2,
+)"
+R"(        uint nbt3
+)"
+R"() {
+)"
+R"(    dst  = dst + offsetd;
+)"
+R"(
+)"
+R"(    const int i3 = get_group_id(2);
+)"
+R"(    const int i2 = get_group_id(1);
+)"
+R"(    const int i1 = get_group_id(0);
+)"
+R"(
+)"
+R"(    const int nth = get_local_size(0);
+)"
+R"(    const int tid = get_local_id(0);
+)"
+R"(
+)"
+R"(    const int ib = i1 / ne01;
+)"
+R"(    if (ib == 0) {
+)"
+R"(        return;
+)"
+R"(    }
+)"
+R"(    const int i00 = ib * nth;
+)"
+R"(    const int i01 = i1 % ne01;
+)"
+R"(    const int i02 = i2;
+)"
+R"(    const int i03 = i3;
+)"
+R"(
+)"
+R"(    global float * tmp_row  = (global float *)(tmp + nbt1 * i01 + nbt2 * i02 + nbt3 * i03);
+)"
+R"(    global float * dst_row  = (global float *)dst + i03*ne02*ne01*ne00 + i02*ne01*ne00 + i01*ne00;
+)"
+R"(
+)"
+R"(    if (i00 + tid < ne00) {
+)"
+R"(        dst_row[i00 + tid] += tmp_row[ib - 1];
+)"
+R"(    }
+)"
+R"(}
 )"

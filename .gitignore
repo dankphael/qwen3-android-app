@@ -1,6 +1,8 @@
 # Build outputs
 app/build/
 app/.cxx/
+app/src/main/cpp/opencl_kernels/
+app/src/main/cpp/opencl_include/
 *.apk
 *.so
 
@@ -17,9 +19,6 @@ local.properties
 # OS
 Thumbs.db
 
-# llama.cpp build artifacts
-llama.cpp/build/
-
 # Downloaded dependencies (large files)
 app/src/main/cpp/libOpenCL.so
 app/src/main/cpp/libcutils.so
@@ -32,3 +31,12 @@ OpenCL-Headers/
 # Model files (large)
 *.gguf
 *.gguf.part
+
+# llama.cpp - use as submodule, don't track directly
+llama.cpp/
+
+# Stub files (generated)
+app/src/main/cpp/libOpenCL_stub.c
+app/src/main/cpp/libOpenCL_stub2.c
+app/src/main/cpp/libOpenCL_wrapper.c
+app/src/main/cpp/ggml-opencl-kernels.h
