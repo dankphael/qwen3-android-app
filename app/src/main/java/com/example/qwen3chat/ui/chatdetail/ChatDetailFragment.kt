@@ -4,6 +4,7 @@ import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.content.Intent
 import android.os.Bundle
+import android.speech.RecognizerIntent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -24,6 +25,7 @@ import com.example.qwen3chat.R
 import com.example.qwen3chat.databinding.FragmentChatDetailBinding
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.combine
+import java.util.Locale
 
 /**
  * Chat detail fragment with Phase 3 redesign:
@@ -45,6 +47,10 @@ class ChatDetailFragment : Fragment() {
     private enum class SendState { IDLE, READY, SENDING }
 
     private var currentSendState = SendState.IDLE
+
+    companion object {
+        private const val SPEECH_REQUEST_CODE = 100
+    }
 
     /** FastOutSlowIn interpolator for button morph transitions */
     private val fastOutSlowIn = PathInterpolator(0.4f, 0.0f, 0.2f, 1.0f)
@@ -141,7 +147,8 @@ class ChatDetailFragment : Fragment() {
         binding.buttonSend.setOnClickListener {
             when (currentSendState) {
                 SendState.IDLE -> {
-                    // No action in idle mode
+                    // Launch voice input when idle
+                    launchSpeechRecognition()
                 }
                 SendState.READY -> {
                     val message = binding.editTextInput.text.toString().trim()
@@ -163,6 +170,40 @@ class ChatDetailFragment : Fragment() {
                     viewModel.stopGeneration()
                     transitionToIdle()
                 }
+            }
+        }
+    }
+
+    private fun launchSpeechRecognition() {
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+            putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak now...")
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+        }
+
+        try {
+            startActivityForResult(intent, SPEECH_REQUEST_CODE)
+        } catch (e: Exception) {
+            Toast.makeText(
+                requireContext(),
+                "Speech recognition not available: ${e.message}",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == SPEECH_REQUEST_CODE && resultCode == android.app.Activity.RESULT_OK) {
+            val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            if (!results.isNullOrEmpty()) {
+                val recognizedText = results[0]
+                binding.editTextInput.setText(recognizedText)
+                binding.editTextInput.setSelection(recognizedText.length)
+                // Transition to READY state
+                transitionToReady()
             }
         }
     }
