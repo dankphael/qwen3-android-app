@@ -136,8 +136,8 @@ class ModelSelectionActivity : AppCompatActivity() {
             if (deviceCapability.ramMiB < selectedModel.minRamMiB) {
                 warnings.add("Warning: Model requires ${selectedModel.minRamMiB}MB RAM, device has ${deviceCapability.ramMiB}MB")
             }
-            if (deviceCapability.cpuCores < selectedModel.minCores) {
-                warnings.add("Warning: Model requires ${selectedModel.minCores} cores, device has ${deviceCapability.cpuCores}")
+            if (deviceCapability.cpuCores < selectedModel.minCpuCores) {
+                warnings.add("Warning: Model requires ${selectedModel.minCpuCores} cores, device has ${deviceCapability.cpuCores}")
             }
 
             // Show warnings as toasts

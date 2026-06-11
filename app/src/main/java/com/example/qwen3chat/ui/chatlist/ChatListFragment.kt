@@ -104,7 +104,7 @@ class ChatListFragment : Fragment() {
     private fun setupFab() {
         binding.fabNewChat.setOnClickListener {
             val modelPreferences = ModelPreferences(requireContext())
-            val modelUsed = modelPreferences.getSelectedModelKey()
+            val modelUsed = modelPreferences.getSelectedModelKey() ?: ""
             viewModel.createNewChat(modelUsed) { chatId ->
                 navigateToChatId(chatId)
             }

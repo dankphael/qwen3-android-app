@@ -50,6 +50,7 @@ class ChatAdapter(private var messageActionListener: MessageActionListener? = nu
     }
 
     override fun onBindViewHolder(holder: MessageViewHolder, position: Int) {
+        holder.messageActionListener = messageActionListener
         holder.bind(getItem(position), position, animatedPositions)
     }
 
@@ -64,7 +65,7 @@ class ChatAdapter(private var messageActionListener: MessageActionListener? = nu
         private val binding: ItemMessageBinding
     ) : RecyclerView.ViewHolder(binding.root) {
 
-        // ── View references for convenience ──
+        var messageActionListener: MessageActionListener? = null
         val thinkingSection: View get() = binding.thinkingSection
         val thinkingHeader: View get() = binding.thinkingHeader
         val thinkingContent: View? get() = binding.thinkingContent

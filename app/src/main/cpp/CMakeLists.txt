@@ -9,17 +9,19 @@ set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_SERVER OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_COMMON ON CACHE BOOL "" FORCE)
 set(GGML_OPENMP ON CACHE BOOL "" FORCE)
-# GPU: OpenCL enabled for devices with working GPU support
-# On non-rooted devices, OpenCL probe may fail due to linker namespace restrictions
-# Graceful fallback to CPU when GPU is unavailable (best-effort GPU, required CPU)
+# GPU: disabled — OpenCL/Vulkan backends have linker namespace issues on Android
+# CPU-only with OpenMP + NEON is stable. GPU offload to be revisited.
 set(GGML_VULKAN OFF CACHE BOOL "" FORCE)
-set(GGML_OPENCL ON CACHE BOOL "" FORCE)
+set(GGML_OPENCL OFF CACHE BOOL "" FORCE)
 set(GGML_OPENCL_EMBED_KERNELS OFF CACHE BOOL "" FORCE)
 # Android cross-compile: disable native CPU detection, use armv8-a+simd
 set(GGML_NATIVE OFF CACHE BOOL "" FORCE)
 set(GGML_CPU_ARM_ARCH "armv8.2-a" CACHE STRING "" FORCE)
 # Performance: enable Link-Time Optimization
 set(GGML_LTO ON CACHE BOOL "" FORCE)
+
+# Tell llama.cpp's ggml-opencl where to find our OpenCL headers and kernel files
+set(GGML_ANDROID_APP_CPP_DIR ${CMAKE_SOURCE_DIR} CACHE PATH "Android app cpp dir" FORCE)
 
 add_subdirectory(${LLAMA_CPP_DIR} llama.cpp)
 
@@ -38,7 +40,7 @@ target_link_libraries(llama-jni PRIVATE
     llama-common
     log
 )
-message(STATUS "OpenCL: linked with device libOpenCL.so (unresolved symbols ignored)")
+message(STATUS "OpenCL: linked with device libOpenCL.so")
 
 # OpenMP for parallel matrix ops on ARM
 find_package(OpenMP)

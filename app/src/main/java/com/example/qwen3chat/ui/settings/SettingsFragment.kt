@@ -115,7 +115,7 @@ class SettingsFragment : Fragment() {
             .setNegativeButton("Cancel") { _, _ -> }
             .setNeutralButton("Reset") { _, _ ->
                 modelPreferences.resetSystemPrompt()
-                binding.textSystemPromptPreview.text = ModelPreferences.DEFAULT_SYSTEM_PROMPT
+                binding.textSystemPromptPreview.text = "You are a helpful AI assistant."
             }
             .setPositiveButton("Save") { _, _ ->
                 val newPrompt = input.text.toString().trim()

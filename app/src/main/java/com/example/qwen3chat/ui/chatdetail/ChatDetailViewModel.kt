@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.qwen3chat.ChatMessage
 import com.example.qwen3chat.GenerationService
 import com.example.qwen3chat.MainActivity
+import com.example.qwen3chat.ModelMetadata
 import com.example.qwen3chat.QwenModel
 import com.example.qwen3chat.data.db.AppDatabase
 import com.example.qwen3chat.data.entity.MessageEntity
