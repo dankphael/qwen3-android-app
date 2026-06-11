@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background"
+    android:paddingHorizontal="@dimen/screen_h_padding"
+    android:paddingVertical="@dimen/space_24">
+
+    <!-- Temperature label -->
+    <TextView
+        android:id="@+id/labelTemperature"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Temperature"
+        android:textAppearance="@style/TextAppearance.Qwen.TitleMedium"
+        android:textColor="@color/on_surface"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Temperature value -->
+    <TextView
+        android:id="@+id/valueTemperature"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0.7"
+        android:textAppearance="@style/TextAppearance.Qwen.BodyMedium"
+        android:textColor="@color/primary"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/labelTemperature"
+        app:layout_constraintBottom_toBottomOf="@id/labelTemperature" />
+
+    <!-- Temperature slider -->
+    <com.google.android.material.slider.Slider
+        android:id="@+id/sliderTemperature"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_8"
+        android:valueFrom="0.1"
+        android:valueTo="2.0"
+        android:value="0.7"
+        android:stepSize="0.1"
+        app:labelBehavior="gone"
+        app:thumbColor="@color/primary"
+        app:trackColorActive="@color/primary"
+        app:trackColorInactive="@color/outline_variant"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/labelTemperature" />
+
+    <!-- Temperature range labels -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0.1"
+        android:textAppearance="@style/TextAppearance.Qwen.LabelSmall"
+        android:textColor="@color/on_surface_variant"
+        android:layout_marginTop="@dimen/space_2"
+        app:layout_constraintStart_toStartOf="@id/sliderTemperature"
+        app:layout_constraintTop_toBottomOf="@id/sliderTemperature" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="2.0"
+        android:textAppearance="@style/TextAppearance.Qwen.LabelSmall"
+        android:textColor="@color/on_surface_variant"
+        android:layout_marginTop="@dimen/space_2"
+        app:layout_constraintEnd_toEndOf="@id/sliderTemperature"
+        app:layout_constraintTop_toBottomOf="@id/sliderTemperature" />
+
+    <!-- Divider -->
+    <View
+        android:id="@+id/divider1"
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:layout_marginTop="@dimen/space_24"
+        android:background="@color/outline_variant"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/sliderTemperature" />
+
+    <!-- Max Tokens label -->
+    <TextView
+        android:id="@+id/labelMaxTokens"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Max Tokens"
+        android:textAppearance="@style/TextAppearance.Qwen.TitleMedium"
+        android:textColor="@color/on_surface"
+        android:layout_marginTop="@dimen/space_24"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/divider1" />
+
+    <!-- Max Tokens value -->
+    <TextView
+        android:id="@+id/valueMaxTokens"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="512"
+        android:textAppearance="@style/TextAppearance.Qwen.BodyMedium"
+        android:textColor="@color/primary"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/labelMaxTokens"
+        app:layout_constraintBottom_toBottomOf="@id/labelMaxTokens" />
+
+    <!-- Max Tokens slider -->
+    <com.google.android.material.slider.Slider
+        android:id="@+id/sliderMaxTokens"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_8"
+        android:valueFrom="64"
+        android:valueTo="2048"
+        android:value="512"
+        android:stepSize="64"
+        app:labelBehavior="gone"
+        app:thumbColor="@color/primary"
+        app:trackColorActive="@color/primary"
+        app:trackColorInactive="@color/outline_variant"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/labelMaxTokens" />
+
+    <!-- Max Tokens range labels -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="64"
+        android:textAppearance="@style/TextAppearance.Qwen.LabelSmall"
+        android:textColor="@color/on_surface_variant"
+        android:layout_marginTop="@dimen/space_2"
+        app:layout_constraintStart_toStartOf="@id/sliderMaxTokens"
+        app:layout_constraintTop_toBottomOf="@id/sliderMaxTokens" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="2048"
+        android:textAppearance="@style/TextAppearance.Qwen.LabelSmall"
+        android:textColor="@color/on_surface_variant"
+        android:layout_marginTop="@dimen/space_2"
+        app:layout_constraintEnd_toEndOf="@id/sliderMaxTokens"
+        app:layout_constraintTop_toBottomOf="@id/sliderMaxTokens" />
+
+    <!-- Divider -->
+    <View
+        android:id="@+id/divider2"
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:layout_marginTop="@dimen/space_24"
+        android:background="@color/outline_variant"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/sliderMaxTokens" />
+
+    <!-- Diagnostics button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonDiagnostics"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/download_button_height"
+        android:layout_marginTop="@dimen/space_24"
+        android:text="Diagnostics"
+        android:textAppearance="@style/TextAppearance.Qwen.LabelLarge"
+        style="@style/Widget.Material3.Button.OutlinedButton"
+        app:cornerRadius="@dimen/download_button_radius"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/divider2"
+        tools:ignore="UnusedAttribute" />
+
+    <!-- Change Model button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonChangeModel"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/download_button_height"
+        android:layout_marginTop="@dimen/space_16"
+        android:text="Change Model"
+        android:textAppearance="@style/TextAppearance.Qwen.LabelLarge"
+        app:cornerRadius="@dimen/download_button_radius"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/buttonDiagnostics"
+        tools:ignore="UnusedAttribute" />
+
+    <!-- Device info -->
+    <TextView
+        android:id="@+id/textDeviceInfo"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_24"
+        android:textAppearance="@style/TextAppearance.Qwen.BodySmall"
+        android:textColor="@color/on_surface_variant"
+        android:gravity="center"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/buttonChangeModel"
+        tools:text="Device info placeholder" />
+
+    <!-- App version -->
+    <TextView
+        android:id="@+id/textAppVersion"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="@style/TextAppearance.Qwen.LabelSmall"
+        android:textColor="@color/on_surface_variant"
+        android:layout_marginTop="@dimen/space_8"
+        android:gravity="center"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/textDeviceInfo"
+        tools:text="Version 16" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

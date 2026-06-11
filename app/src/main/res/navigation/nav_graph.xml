@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/chatListFragment">
+
+    <fragment
+        android:id="@+id/chatListFragment"
+        android:name="com.example.qwen3chat.ui.chatlist.ChatListFragment"
+        android:label="Chats"
+        tools:layout="@layout/fragment_chat_list">
+
+        <action
+            android:id="@+id/action_chatList_to_chatDetail"
+            app:destination="@id/chatDetailFragment"
+            app:enterAnim="@anim/fade_through"
+            app:exitAnim="@anim/fade_out"
+            app:popEnterAnim="@anim/fade_through"
+            app:popExitAnim="@anim/fade_out" />
+
+        <action
+            android:id="@+id/action_chatList_to_settings"
+            app:destination="@id/settingsFragment"
+            app:enterAnim="@anim/fade_through"
+            app:exitAnim="@anim/fade_out"
+            app:popEnterAnim="@anim/fade_through"
+            app:popExitAnim="@anim/fade_out" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/chatDetailFragment"
+        android:name="com.example.qwen3chat.ui.chatdetail.ChatDetailFragment"
+        android:label="Chat"
+        tools:layout="@layout/fragment_chat_detail">
+
+        <argument
+            android:name="chatId"
+            app:argType="long" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.example.qwen3chat.ui.settings.SettingsFragment"
+        android:label="Settings"
+        tools:layout="@layout/fragment_settings">
+
+        <action
+            android:id="@+id/action_settings_to_diagnostics"
+            app:destination="@id/diagnosticFragment"
+            app:enterAnim="@anim/fade_through"
+            app:exitAnim="@anim/fade_out"
+            app:popEnterAnim="@anim/fade_through"
+            app:popExitAnim="@anim/fade_out" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/diagnosticFragment"
+        android:name="com.example.qwen3chat.ui.diagnostics.DiagnosticFragment"
+        android:label="Diagnostics"
+        tools:layout="@layout/fragment_diagnostic" />
+
+    <fragment
+        android:id="@+id/noteListFragment"
+        android:name="com.example.qwen3chat.ui.notes.NoteListFragment"
+        android:label="Notes"
+        tools:layout="@layout/fragment_note_list">
+
+        <action
+            android:id="@+id/action_noteList_to_noteEditor"
+            app:destination="@id/noteEditorFragment"
+            app:enterAnim="@anim/fade_through"
+            app:exitAnim="@anim/fade_out"
+            app:popEnterAnim="@anim/fade_through"
+            app:popExitAnim="@anim/fade_out" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/noteEditorFragment"
+        android:name="com.example.qwen3chat.ui.notes.NoteEditorFragment"
+        android:label="Editor"
+        tools:layout="@layout/fragment_note_editor">
+
+        <argument
+            android:name="noteId"
+            app:argType="long" />
+    </fragment>
+
+</navigation>

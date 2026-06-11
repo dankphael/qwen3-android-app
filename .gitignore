@@ -1,0 +1,34 @@
+# Build outputs
+app/build/
+app/.cxx/
+*.apk
+*.so
+
+# Gradle
+.gradle/
+build/
+local.properties
+
+# IDE
+.idea/
+*.iml
+.DS_Store
+
+# OS
+Thumbs.db
+
+# llama.cpp build artifacts
+llama.cpp/build/
+
+# Downloaded dependencies (large files)
+app/src/main/cpp/libOpenCL.so
+app/src/main/cpp/libcutils.so
+app/src/main/cpp/libutils.so
+spirv-install/
+vulkan-headers/
+SPIRV-Headers/
+OpenCL-Headers/
+
+# Model files (large)
+*.gguf
+*.gguf.part

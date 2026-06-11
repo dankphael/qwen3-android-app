@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingHorizontal="@dimen/screen_h_padding"
+    android:paddingTop="@dimen/bubble_margin_top"
+    android:paddingBottom="@dimen/bubble_margin_bottom">
+
+    <!-- ═══════════════════════════════════════════════════════
+         THINKING SECTION (collapsed header + expandable content)
+         ═══════════════════════════════════════════════════════ -->
+    <LinearLayout
+        android:id="@+id/thinkingSection"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Thinking collapsed header (always visible) -->
+        <LinearLayout
+            android:id="@+id/thinkingHeader"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/thinking_collapsed_height"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="@drawable/bg_chip">
+
+            <ImageView
+                android:id="@+id/thinkingIcon"
+                android:layout_width="@dimen/thinking_icon_size"
+                android:layout_height="@dimen/thinking_icon_size"
+                android:src="@drawable/ic_brain"
+                android:contentDescription="Thinking"
+                android:layout_marginEnd="@dimen/space_6" />
+
+            <TextView
+                android:id="@+id/thinkingLabel"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Thinking"
+                android:textAppearance="@style/TextAppearance.Qwen.LabelMedium"
+                android:textColor="@color/secondary" />
+
+            <ImageView
+                android:id="@+id/thinkingChevron"
+                android:layout_width="@dimen/thinking_chevron_size"
+                android:layout_height="@dimen/thinking_chevron_size"
+                android:src="@drawable/ic_chevron_down"
+                android:rotation="0"
+                android:contentDescription="Expand thinking" />
+        </LinearLayout>
+
+        <!-- Thinking expanded content -->
+        <LinearLayout
+            android:id="@+id/thinkingContent"
+            android:visibility="gone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:maxHeight="@dimen/thinking_expanded_max_height"
+            android:background="@drawable/bg_thinking_expanded"
+            android:paddingHorizontal="@dimen/thinking_padding_h"
+            android:paddingVertical="@dimen/thinking_padding_v"
+            android:layout_marginBottom="@dimen/space_8">
+
+            <TextView
+                android:id="@+id/thinkingText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.Qwen.BodySmall"
+                android:textColor="@color/on_primary_container"
+                android:alpha="0.8" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- ═══════════════════════════════════════════════════════
+         MESSAGE BUBBLE CONTAINER (FrameLayout for maxWidth constraint)
+         ═══════════════════════════════════════════════════════ -->
+    <FrameLayout
+        android:id="@+id/bubbleContainer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/thinkingSection">
+
+        <LinearLayout
+            android:id="@+id/bubble"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:elevation="1dp"
+            android:paddingHorizontal="@dimen/bubble_padding_h"
+            android:paddingVertical="@dimen/bubble_padding_v">
+
+            <TextView
+                android:id="@+id/tvMessage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.Qwen.BodyLarge" />
+
+            <!-- Code block container for Phase 2 (simplified: styled TextViews) -->
+            <LinearLayout
+                android:id="@+id/codeBlockContainer"
+                android:visibility="gone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="@dimen/space_8" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <!-- ═══════════════════════════════════════════════════════
+         TIMESTAMP (below bubble, aligned left/right per user)
+         ═══════════════════════════════════════════════════════ -->
+    <TextView
+        android:id="@+id/tvTimestamp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="@style/TextAppearance.Qwen.LabelSmall"
+        android:textColor="@color/on_surface_variant"
+        android:layout_marginTop="@dimen/space_4"
+        app:layout_constraintTop_toBottomOf="@id/bubbleContainer" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

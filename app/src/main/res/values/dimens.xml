@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base unit -->
+    <dimen name="base_unit">4dp</dimen>
+
+    <!-- Spacing scale (multiples of base_unit) -->
+    <dimen name="space_0">0dp</dimen>
+    <dimen name="space_2">2dp</dimen>
+    <dimen name="space_4">4dp</dimen>
+    <dimen name="space_6">6dp</dimen>
+    <dimen name="space_8">8dp</dimen>
+    <dimen name="space_12">12dp</dimen>
+    <dimen name="space_16">16dp</dimen>
+    <dimen name="space_20">20dp</dimen>
+    <dimen name="space_24">24dp</dimen>
+    <dimen name="space_32">32dp</dimen>
+    <dimen name="space_40">40dp</dimen>
+    <dimen name="space_48">48dp</dimen>
+    <dimen name="space_56">56dp</dimen>
+    <dimen name="space_64">64dp</dimen>
+    <dimen name="space_80">80dp</dimen>
+
+    <!-- Screen / card / list padding -->
+    <dimen name="screen_h_padding">16dp</dimen>
+    <dimen name="card_padding">16dp</dimen>
+    <dimen name="list_item_h_padding">12dp</dimen>
+    <dimen name="list_item_v_padding">8dp</dimen>
+    <dimen name="section_gap">24dp</dimen>
+
+    <!-- Toolbar -->
+    <dimen name="toolbar_height">56dp</dimen>
+    <dimen name="toolbar_icon_size">24dp</dimen>
+    <dimen name="toolbar_icon_margin">12dp</dimen>
+    <dimen name="toolbar_tap_target">40dp</dimen>
+    <dimen name="toolbar_icon_gap">4dp</dimen>
+
+    <!-- Message bubbles -->
+    <dimen name="bubble_corner_radius">20dp</dimen>
+    <dimen name="bubble_padding_h">16dp</dimen>
+    <dimen name="bubble_padding_v">12dp</dimen>
+    <dimen name="bubble_margin_top">2dp</dimen>
+    <dimen name="bubble_margin_bottom">2dp</dimen>
+    <dimen name="bubble_margin_start">16dp</dimen>
+    <dimen name="bubble_margin_end">16dp</dimen>
+    <!-- Note: bubble_max_width_user is a fraction (0.80), used programmatically -->
+    <dimen name="bubble_max_width_user">0.80</dimen>
+    <dimen name="bubble_margin_start_user">64dp</dimen>
+    <dimen name="bubble_margin_end_assistant">64dp</dimen>
+
+    <!-- Code blocks -->
+    <dimen name="code_block_radius">12dp</dimen>
+    <dimen name="code_block_padding">12dp</dimen>
+    <dimen name="code_copy_button_size">28dp</dimen>
+    <dimen name="code_copy_inset">8dp</dimen>
+
+    <!-- Thinking section -->
+    <dimen name="thinking_collapsed_height">36dp</dimen>
+    <dimen name="thinking_expanded_max_height">300dp</dimen>
+    <dimen name="thinking_radius">12dp</dimen>
+    <dimen name="thinking_padding_h">12dp</dimen>
+    <dimen name="thinking_padding_v">10dp</dimen>
+    <dimen name="thinking_icon_size">18dp</dimen>
+    <dimen name="thinking_chevron_size">16dp</dimen>
+
+    <!-- Input bar -->
+    <dimen name="input_bar_min_height">56dp</dimen>
+    <dimen name="input_bar_max_height">120dp</dimen>
+    <dimen name="input_bar_radius">28dp</dimen>
+    <dimen name="input_bar_padding">4dp</dimen>
+    <dimen name="input_bar_margin_h">12dp</dimen>
+    <dimen name="input_bar_margin_v">8dp</dimen>
+    <dimen name="send_button_size">40dp</dimen>
+    <dimen name="send_button_icon_size">24dp</dimen>
+    <dimen name="attach_button_size">40dp</dimen>
+
+    <!-- Typing indicator -->
+    <dimen name="typing_indicator_height">36dp</dimen>
+    <dimen name="typing_indicator_radius">18dp</dimen>
+    <dimen name="typing_dot_size">8dp</dimen>
+    <dimen name="typing_dot_gap">6dp</dimen>
+
+    <!-- Download card -->
+    <dimen name="download_card_height">200dp</dimen>
+    <dimen name="download_card_radius">20dp</dimen>
+    <dimen name="download_card_padding">20dp</dimen>
+    <dimen name="download_icon_size">48dp</dimen>
+    <dimen name="download_progress_height">6dp</dimen>
+    <dimen name="download_progress_radius">3dp</dimen>
+    <dimen name="download_button_height">56dp</dimen>
+    <dimen name="download_button_radius">28dp</dimen>
+
+    <!-- Welcome screen -->
+    <dimen name="welcome_icon_size">80dp</dimen>
+    <dimen name="welcome_padding">32dp</dimen>
+    <dimen name="suggestion_chip_radius">20dp</dimen>
+    <dimen name="suggestion_chip_padding_h">16dp</dimen>
+    <dimen name="suggestion_chip_padding_v">10dp</dimen>
+</resources>

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="@color/background">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/space_24"
+        android:gravity="center_horizontal">
+
+        <!-- Title -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Choose Your Model"
+            android:textAppearance="@style/TextAppearance.Qwen.HeadlineMedium"
+            android:textColor="@color/on_surface"
+            android:layout_marginBottom="@dimen/space_8" />
+
+        <!-- Device info -->
+        <TextView
+            android:id="@+id/textViewDeviceInfo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.Qwen.BodyMedium"
+            android:textColor="@color/on_surface_variant"
+            android:layout_marginBottom="@dimen/space_24" />
+
+        <!-- Model list (radio buttons) -->
+        <RadioGroup
+            android:id="@+id/radioGroupModels"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/space_24" />
+
+        <!-- Download button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonDownload"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/download_button_height"
+            android:text="Download &amp; Start"
+            android:textAppearance="@style/TextAppearance.Qwen.LabelLarge"
+            android:textColor="@color/on_primary"
+            android:background="@drawable/bg_download_button_idle"
+            android:stateListAnimator="@null"
+            android:layout_marginBottom="@dimen/space_16"
+            app:backgroundTint="@null"
+            app:cornerRadius="@dimen/download_button_radius" />
+
+        <!-- Wi-Fi warning -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Download over Wi-Fi recommended."
+            android:textAppearance="@style/TextAppearance.Qwen.LabelSmall"
+            android:textColor="@color/on_surface_variant"
+            android:layout_marginBottom="@dimen/space_4" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="You can change model later in Settings."
+            android:textAppearance="@style/TextAppearance.Qwen.LabelSmall"
+            android:textColor="@color/on_surface_variant" />
+
+    </LinearLayout>
+</ScrollView>

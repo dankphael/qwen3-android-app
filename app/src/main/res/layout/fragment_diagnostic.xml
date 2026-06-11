@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
+    android:padding="@dimen/screen_h_padding">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingBottom="@dimen/screen_h_padding">
+
+        <!-- ===== DEVICE CARD ===== -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/screen_h_padding"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Device"
+                    android:textAppearance="@style/TextAppearance.Qwen.TitleMedium"
+                    android:textColor="?attr/colorPrimary"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/textDeviceModel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@style/TextAppearance.Qwen.BodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    tools:text="Model: Unknown" />
+
+                <TextView
+                    android:id="@+id/textChipset"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textAppearance="@style/TextAppearance.Qwen.BodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    tools:text="Chipset: Unknown" />
+
+                <TextView
+                    android:id="@+id/textAndroidVersion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textAppearance="@style/TextAppearance.Qwen.BodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    tools:text="Android 14" />
+
+                <TextView
+                    android:id="@+id/textDeviceRam"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textAppearance="@style/TextAppearance.Qwen.BodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    tools:text="RAM: 15513 MB" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- ===== CPU CARD ===== -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/screen_h_padding"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="CPU"
+                    android:textAppearance="@style/TextAppearance.Qwen.TitleMedium"
+                    android:textColor="?attr/colorPrimary"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/textCpuCores"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@style/TextAppearance.Qwen.BodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    tools:text="Cores: 8" />
+
+                <TextView
+                    android:id="@+id/textCpuFreqs"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textAppearance="@style/TextAppearance.Qwen.BodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:fontFamily="@font/jetbrains_mono_regular"
+                    tools:text="Freqs: 3000 3000 2000 2000 2000 2000 2000 2000" />
+
+                <TextView
+                    android:id="@+id/textCpuGovernor"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textAppearance="@style/TextAppearance.Qwen.BodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    tools:text="Governor: schedutil" />
+
+                <TextView
+                    android:id="@+id/textCpuUsage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textAppearance="@style/TextAppearance.Qwen.BodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:fontFamily="@font/jetbrains_mono_regular"
+                    tools:text="Usage: 45% 80% 12% 5% 8% 3% 3% 5%" />
+
+                <TextView
+                    android:id="@+id/textThermal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textAppearance="@style/TextAppearance.Qwen.BodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    tools:text="Thermal: 42°C" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- ===== GPU CARD ===== -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/screen_h_padding"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="GPU"
+                    android:textAppearance="@style/TextAppearance.Qwen.TitleMedium"
+                    android:textColor="?attr/colorPrimary"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/textGpuType"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@style/TextAppearance.Qwen.BodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    tools:text="Type: Mali-G57 MC2" />
+
+                <TextView
+                    android:id="@+id/textGpuUtil"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textAppearance="@style/TextAppearance.Qwen.BodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    tools:text="Util: 0%" />
+
+                <TextView
+                    android:id="@+id/textGpuFreq"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textAppearance="@style/TextAppearance.Qwen.BodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    tools:text="Freq: N/A" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- ===== MEMORY CARD ===== -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/screen_h_padding"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Memory"
+                    android:textAppearance="@style/TextAppearance.Qwen.TitleMedium"
+                    android:textColor="?attr/colorPrimary"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/textAppHeap"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@style/TextAppearance.Qwen.BodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    tools:text="App Heap: 45MB / 256MB" />
+
+                <TextView
+                    android:id="@+id/textNativeHeap"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textAppearance="@style/TextAppearance.Qwen.BodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    tools:text="Native Heap: 320MB" />
+
+                <TextView
+                    android:id="@+id/textRamUsage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textAppearance="@style/TextAppearance.Qwen.BodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    tools:text="Device RAM: 8.2GB / 15.1GB" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- ===== MODEL CARD ===== -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Model"
+                    android:textAppearance="@style/TextAppearance.Qwen.TitleMedium"
+                    android:textColor="?attr/colorPrimary"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/textGenerationState"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@style/TextAppearance.Qwen.BodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    tools:text="Status: Idle" />
+
+                <TextView
+                    android:id="@+id/textKvCache"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textAppearance="@style/TextAppearance.Qwen.BodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    tools:text="KV Cache: 34/2048" />
+
+                <TextView
+                    android:id="@+id/textDecodeThreads"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textAppearance="@style/TextAppearance.Qwen.BodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    tools:text="Decode Threads: 8" />
+
+                <TextView
+                    android:id="@+id/textBatchThreads"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textAppearance="@style/TextAppearance.Qwen.BodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    tools:text="Batch Threads: 8" />
+
+                <TextView
+                    android:id="@+id/textBatchSize"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textAppearance="@style/TextAppearance.Qwen.BodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    tools:text="Batch Size: 512" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+</ScrollView>

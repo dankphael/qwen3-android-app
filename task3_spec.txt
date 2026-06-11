@@ -1,0 +1,107 @@
+TASK: Refactor ChatDetailViewModel to use GenerationService
+
+Write to: /home/raphael-lee/qwen3-android-app/app/src/main/java/com/example/qwen3chat/ui/chatdetail/ChatDetailViewModel.kt
+
+Replace the ENTIRE file with the content below. The key change: instead of calling
+qwenModel.generateStreaming() directly inside sendMessage(), start GenerationService
+and collect from GenerationService.events SharedFlow.
+
+EXISTING CODE TO PRESERVE (port it in carefully):
+- Lines 1-17: package + imports (keep all, add: GenerationService.GenerationEvent, Intent)
+- Lines 64-66: init block (db + repository setup)
+- Lines 68: isModelLoaded
+- Lines 70-75: setChatId
+- Lines 77-83: observeChat
+- Lines 85-88: attachModel
+- Lines 90-102: observeMessages
+- Lines 203-207: stopGeneration (CHANGE: add intent to cancel service)
+- Lines 209-212: onResponseComplete
+- Lines 215-217: onCleared
+- Lines 220-227: updateContextUsage
+- Lines 228-231: exportChat
+
+CHANGES TO sendMessage() (lines 107-198):
+Replace the entire method. New version:
+
+1. Same validation checks (chatId, model, isGenerating)
+2. Save user message to Room (same code)
+3. Set _isGenerating = true
+4. Build JSON array from chatMessages using org.json.JSONObject/JSONArray:
+   val jsonArray = JSONArray()
+   for (msg in chatMessages) {
+       val obj = JSONObject()
+       obj.put("content", msg.content)
+       obj.put("isUser", msg.isUser)
+       jsonArray.put(obj)
+   }
+5. Start collecting from GenerationService.events BEFORE starting service
+   (use a Job ref: var generationJob: Job? = null)
+   generationJob = viewModelScope.launch {
+       GenerationService.events.collect { event ->
+           when (event) {
+               is GenerationEvent.Token -> {
+                   if (event.chatId == _chatId.value) {
+                       _streamingToken.value = event.token
+                       _tokensPerSecond.value = event.speed
+                   }
+               }
+               is GenerationEvent.Complete -> {
+                   if (event.chatId == _chatId.value) {
+                       val parsed = ReasoningParser.parse(event.response)
+                       repository.saveMessageAndAutoTitle(
+                           chatId = currentChatId,
+                           text = parsed.answer,
+                           role = "assistant",
+                           thinking = parsed.thinking,
+                           isFirstMessage = false
+                       )
+                       onResponseComplete()
+                   }
+               }
+               is GenerationEvent.Error -> {
+                   if (event.chatId == _chatId.value) {
+                       onResponseComplete()
+                       onError(event.error)
+                   }
+               }
+           }
+       }
+   }
+6. Start the service:
+   val intent = Intent(getApplication(), GenerationService::class.java).apply {
+       action = GenerationService.ACTION_START
+       putExtra(GenerationService.EXTRA_CHAT_ID, currentChatId)
+       putExtra(GenerationService.EXTRA_MESSAGES_JSON, jsonArray.toString())
+   }
+   ContextCompat.startForegroundService(getApplication(), intent)
+7. onResponseStart() call
+8. Remove the old withContext(Dispatchers.IO) { model.generateStreaming(...) } block entirely
+
+CHANGES TO stopGeneration():
+Add before existing code:
+   val intent = Intent(getApplication(), GenerationService::class.java).apply {
+       action = GenerationService.ACTION_CANCEL
+   }
+   getApplication<Application>().startService(intent)
+   MainActivity.sharedChatViewModel?.qwenModelInstance?.cancel()
+
+CHANGES TO onResponseComplete():
+Add: generationJob?.cancel(); generationJob = null
+
+ADD NEW FIELD:
+private var generationJob: kotlinx.coroutines.Job? = null
+
+ADD IMPORTS (at top):
+import android.content.Intent
+import com.example.qwen3chat.GenerationService
+import org.json.JSONArray
+import org.json.JSONObject
+import kotlinx.coroutines.Job
+
+REMOVE imports that are no longer used:
+import kotlinx.coroutines.Dispatchers (no longer needed for withContext)
+import kotlinx.coroutines.withContext (no longer needed)
+
+CRITICAL: The message list building code (lines 146-160) that constructs chatMessages for the model MUST stay — we still build it for the JSON serialization. Only remove the withContext(Dispatchers.IO) { model.generateStreaming(...) } block.
+
+SIMPLICITY RULE: Keep the transform as close to the original as possible. Only change what's needed.
