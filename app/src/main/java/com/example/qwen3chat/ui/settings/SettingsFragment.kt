@@ -148,8 +148,18 @@ class SettingsFragment : Fragment() {
             DeviceCapability.Tier.MID -> "Standard"
             DeviceCapability.Tier.HIGH -> "Performance"
         }
+
+        // Build available models string
+        val availableModels = deviceCapability.availableModels
+        val modelNames = availableModels.joinToString(", ") { model ->
+            val sizeGb = String.format("%.1f", model.sizeBytes / (1024f * 1024f * 1024f))
+            "${model.displayName} ($sizeGb GB)"
+        }
+
         binding.textDeviceInfo.text =
-            "Device: ${deviceCapability.ramMiB} MB RAM, ${deviceCapability.cpuCores} cores\nTier: $tierLabel"
+            "Device: ${deviceCapability.ramMiB} MB RAM, ${deviceCapability.cpuCores} cores\n" +
+            "Tier: $tierLabel\n" +
+            "Available: $modelNames"
     }
 
     private fun setupAppVersion() {

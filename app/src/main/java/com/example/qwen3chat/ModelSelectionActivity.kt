@@ -127,6 +127,23 @@ class ModelSelectionActivity : AppCompatActivity() {
             }
 
             val modelKey = selectedId.tag as String
+            val selectedModel = ModelMetadata.findByKey(modelKey)
+
+            // Check compatibility warnings
+            val warnings = mutableListOf<String>()
+
+            // Check if model meets minimum requirements
+            if (deviceCapability.ramMiB < selectedModel.minRamMiB) {
+                warnings.add("Warning: Model requires ${selectedModel.minRamMiB}MB RAM, device has ${deviceCapability.ramMiB}MB")
+            }
+            if (deviceCapability.cpuCores < selectedModel.minCores) {
+                warnings.add("Warning: Model requires ${selectedModel.minCores} cores, device has ${deviceCapability.cpuCores}")
+            }
+
+            // Show warnings as toasts
+            for (warning in warnings) {
+                android.widget.Toast.makeText(this, warning, android.widget.Toast.LENGTH_LONG).show()
+            }
 
             // Persist selection
             ModelPreferences(this).apply {
