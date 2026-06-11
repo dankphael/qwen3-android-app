@@ -141,8 +141,8 @@ Java_com_example_qwen3chat_LlamaEngine_nativeCreateContext(
     int decode_threads = n_threads;
     ctx_params.n_threads = decode_threads;
 
-    // Note: flash_attn not available in this llama.cpp version
-    // ctx_params.flash_attn = true;
+    // Enable flash attention for faster KV attention computation
+    ctx_params.flash_attn = true;
 
     llama_context *ctx = llama_init_from_model(model, ctx_params);
     if (!ctx) {
