@@ -51,8 +51,9 @@ android {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
             version = "3.22.1"
-            // Vulkan GPU acceleration via CMake arguments
-            // arguments are passed to cmake configure step
+            // Force Release build (-O3) for llama.cpp/ggml even in debug APKs
+            // Debug builds default to -O0 which causes 40× slowdown in NEON kernels
+            arguments += listOf("-DCMAKE_BUILD_TYPE=Release")
         }
     }
 }
