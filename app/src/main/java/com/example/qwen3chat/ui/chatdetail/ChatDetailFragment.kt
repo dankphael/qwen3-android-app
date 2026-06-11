@@ -47,9 +47,11 @@ class ChatDetailFragment : Fragment(), ChatAdapter.MessageActionListener {
     private enum class SendState { IDLE, READY, SENDING }
 
     private var currentSendState = SendState.IDLE
+    private var generationStartTime = 0L
 
     companion object {
         private const val SPEECH_REQUEST_CODE = 100
+        private const val STOP_CONFIRMATION_THRESHOLD_MS = 2000
     }
 
     /** FastOutSlowIn interpolator for button morph transitions */
@@ -166,9 +168,24 @@ class ChatDetailFragment : Fragment(), ChatAdapter.MessageActionListener {
                     }
                 }
                 SendState.SENDING -> {
-                    // Stop generation - reset to IDLE
-                    viewModel.stopGeneration()
-                    transitionToIdle()
+                    // Check if generation is very early (< 2 seconds)
+                    val elapsedMs = System.currentTimeMillis() - generationStartTime
+                    if (elapsedMs < STOP_CONFIRMATION_THRESHOLD_MS) {
+                        // Confirm early stop to prevent accidental taps
+                        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                            .setTitle("Stop Generation?")
+                            .setMessage("Generation just started. Stop anyway?")
+                            .setNegativeButton("Continue") { _, _ -> }
+                            .setPositiveButton("Stop") { _, _ ->
+                                viewModel.stopGeneration()
+                                transitionToIdle()
+                            }
+                            .show()
+                    } else {
+                        // Enough time has passed, stop immediately
+                        viewModel.stopGeneration()
+                        transitionToIdle()
+                    }
                 }
             }
         }
@@ -251,6 +268,7 @@ class ChatDetailFragment : Fragment(), ChatAdapter.MessageActionListener {
     /** SENDING state: stop icon, error background */
     private fun transitionToSending() {
         currentSendState = SendState.SENDING
+        generationStartTime = System.currentTimeMillis()
         animateSendButton(
             iconRes = R.drawable.ic_stop,
             tintColor = colorWhite,
