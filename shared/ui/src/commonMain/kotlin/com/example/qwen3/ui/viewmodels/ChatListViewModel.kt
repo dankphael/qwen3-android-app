@@ -23,9 +23,9 @@ class ChatListViewModel(
                 chatRepository?.getAllChats()?.collect { chats ->
                     _chats.value = chats.map { chat ->
                         ChatItemState(
-                            id = chat.id,
+                            id = chat.id.toString(),
                             title = chat.title,
-                            lastMessage = chat.lastMessage,
+                            lastMessage = chat.last_message,
                         )
                     }
                 }
@@ -37,7 +37,7 @@ class ChatListViewModel(
 
     fun createNewChat() {
         viewModelScope.launch {
-            chatRepository?.createNewChat()
+            chatRepository?.createChat("default")
         }
     }
 }
